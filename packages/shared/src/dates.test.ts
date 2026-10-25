@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { addDays, addMonths, dateLabel, monthGrid, monthRange, monthTitle, rangeLabel, weekRange } from './dates.ts';
+import {
+  addDays,
+  addMonths,
+  dateLabel,
+  monthGrid,
+  monthRange,
+  monthTitle,
+  rangeLabel,
+  weekdayLabel,
+  weekRange,
+} from './dates.ts';
 
 describe('monthGrid', () => {
   it('starts weeks on Monday and pads to full weeks', () => {
@@ -55,6 +65,10 @@ describe('labels', () => {
     expect(dateLabel('2026-10-24', today)).toBe('Вчера, 24 октября');
     expect(dateLabel('2026-10-23', today)).toBe('Пт, 23 октября');
     expect(dateLabel('2025-12-31', today)).toBe('Ср, 31 декабря 2025');
+  });
+
+  it('has an absolute weekday label for messages', () => {
+    expect(weekdayLabel('2026-10-25')).toBe('Вс, 25 октября');
   });
 
   it('titles months in the nominative case', () => {

@@ -43,6 +43,13 @@
       "when": 1792958331164,
       "tag": "0005_daily_wage",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792960412492,
+      "tag": "0006_payroll",
+      "breakpoints": true
     }
   ]
 }

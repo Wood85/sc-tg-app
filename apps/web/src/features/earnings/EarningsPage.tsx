@@ -14,6 +14,7 @@ import { useState } from 'react';
 import { errorMessage, useGetEarningsQuery } from '../../api/baseApi.ts';
 import { Chevron } from '../../ui/Chevron.tsx';
 import styles from '../../ui/ui.module.css';
+import { PayrollBlock } from '../payroll/PayrollBlock.tsx';
 
 // Заработок по дням за месяц: доли по отправленным отчётам + дневной оклад.
 export function EarningsPage() {
@@ -26,6 +27,7 @@ export function EarningsPage() {
   return (
     <div className={styles.form}>
       <WeekTotals />
+      <PayrollBlock />
 
       <div className={styles.calendarHeader}>
         <button

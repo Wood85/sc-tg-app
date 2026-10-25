@@ -623,3 +623,55 @@ textarea.input {
   font-size: 20px;
   font-weight: 700;
 }
+
+/* Выплаты */
+
+/* Вкладок админки больше, чем помещается по ширине — листаются вбок. */
+.tabsScroll {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tabsScroll .tab {
+  flex: 0 0 auto;
+  padding: 8px 12px;
+}
+
+.stacked + .stacked {
+  margin-top: 12px;
+}
+
+.sectionToggle .itemName {
+  flex: 1;
+}
+
+.sectionToggle .amount {
+  margin: 0 8px;
+}
+
+.statementDays {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 12px;
+}
+
+.statementDay {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.statementDay > .listRow {
+  padding: 0;
+  border-bottom: none;
+}
+
+.statementReport {
+  padding-left: 10px;
+}
+
+.statementReport > .listRow {
+  padding: 2px 0;
+  border-bottom: none;
+}

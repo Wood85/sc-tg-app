@@ -202,3 +202,52 @@ export interface EarningsDto {
   days: { date: string; amount: number; wage: number; reports: number }[];
   total: number;
 }
+
+// Недельный отчёт на выплату: монтажник отправляет его админу раз в неделю.
+// Содержимое фиксируется в момент отправки.
+export interface PayrollReportLine {
+  reportId: number;
+  address: string;
+  location: string;
+  works: { name: string; qty: number; unit: string }[];
+  // Доля монтажника по отчёту.
+  amount: number;
+}
+
+export interface PayrollDay {
+  date: string;
+  reports: PayrollReportLine[];
+  wage: number;
+  total: number;
+}
+
+export interface PayrollStatementDto {
+  id: number;
+  user: UserBriefDto;
+  weekStart: string;
+  weekEnd: string;
+  total: number;
+  days: PayrollDay[];
+  sentAt: string;
+}
+
+export interface PayrollSendResultDto {
+  statement: PayrollStatementDto;
+  // Скольким администраторам бот доставил сообщение (0 — никто ещё не писал боту /start).
+  notifiedAdmins: number;
+}
+
+// Для админа: монтажник и его последний отправленный отчёт.
+export interface PayrollUserDto {
+  user: UserBriefDto;
+  last: { weekStart: string; weekEnd: string; total: number; sentAt: string } | null;
+}
+
+export const payrollSendSchema = z.object({
+  weekStart: isoDateSchema.refine(
+    (iso) => new Date(`${iso}T00:00:00Z`).getUTCDay() === 1,
+    'Неделя начинается с понедельника',
+  ),
+});
+
+export const PAYROLL_HISTORY_LIMITS = [3, 5, 10] as const;

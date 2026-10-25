@@ -6,7 +6,10 @@ const tabClass = ({ isActive }: { isActive: boolean }) => `${styles.tab} ${isAct
 export function AdminLayout() {
   return (
     <>
-      <nav className={styles.tabs}>
+      <nav className={`${styles.tabs} ${styles.tabsScroll}`}>
+        <NavLink to="/admin/payroll" className={tabClass}>
+          Выплаты
+        </NavLink>
         <NavLink to="/admin/works" className={tabClass}>
           Работы
         </NavLink>

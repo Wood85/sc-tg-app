@@ -7,7 +7,7 @@ import { materials, priceItems, users } from '../src/db/schema.ts';
 export async function resetDb() {
   await db.execute(sql`
     truncate users, price_items, materials, reports, report_participants,
-      report_works, report_materials, report_photos, daily_wages, settings restart identity cascade
+      report_works, report_materials, report_photos, daily_wages, settings, payroll_statements restart identity cascade
   `);
 }
 

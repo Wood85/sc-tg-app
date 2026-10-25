@@ -4,6 +4,8 @@ import { errorStatus, useGetMeQuery } from './api/baseApi.ts';
 import { AdminLayout } from './features/admin/AdminLayout.tsx';
 import { CatalogItemEdit } from './features/admin/CatalogItemEdit.tsx';
 import { CatalogList } from './features/admin/CatalogList.tsx';
+import { PayrollUserPage } from './features/admin/PayrollUserPage.tsx';
+import { PayrollUsers } from './features/admin/PayrollUsers.tsx';
 import { UserEdit } from './features/admin/UserEdit.tsx';
 import { UserList } from './features/admin/UserList.tsx';
 import { WageRatesEdit } from './features/admin/WageRatesEdit.tsx';
@@ -65,7 +67,8 @@ function AdminRoutes({ me }: { me: MeDto }) {
   return (
     <Routes>
       <Route element={<AdminLayout />}>
-        <Route index element={<Navigate to="works" replace />} />
+        <Route index element={<Navigate to="payroll" replace />} />
+        <Route path="payroll" element={<PayrollUsers />} />
         <Route path="works" element={<CatalogList kind="works" />} />
         <Route path="materials" element={<CatalogList kind="materials" />} />
         <Route path="users" element={<UserList />} />
@@ -74,6 +77,7 @@ function AdminRoutes({ me }: { me: MeDto }) {
       <Route path="works/:id" element={<CatalogItemEdit kind="works" />} />
       <Route path="materials/:id" element={<CatalogItemEdit kind="materials" />} />
       <Route path="users/:id" element={<UserEdit me={me} />} />
+      <Route path="payroll/:id" element={<PayrollUserPage />} />
     </Routes>
   );
 }

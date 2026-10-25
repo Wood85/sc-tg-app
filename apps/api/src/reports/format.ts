@@ -28,7 +28,7 @@ function formatDate(isoDate: string): string {
   return `${d}.${m}.${y}`;
 }
 
-function formatQty(qty: number): string {
+export function formatQty(qty: number): string {
   return qty.toLocaleString('ru-RU', { maximumFractionDigits: 2 });
 }
 

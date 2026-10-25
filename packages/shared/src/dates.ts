@@ -75,15 +75,23 @@ export function monthTitle({ year, month }: YearMonth): string {
   return `${capitalize(new Intl.DateTimeFormat('ru-RU', { month: 'long' }).format(new Date(year, month, 1)))} ${year}`;
 }
 
+function dayMonth(date: Date): string {
+  return new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long' }).format(date);
+}
+
+// «Пт, 23 октября» — без «Сегодня» и «Вчера», для текстов, которые читают позже (сообщения в Telegram).
+export function weekdayLabel(iso: string): string {
+  const date = fromIsoDate(iso);
+  return `${capitalize(new Intl.DateTimeFormat('ru-RU', { weekday: 'short' }).format(date))}, ${dayMonth(date)}`;
+}
+
 // «Сегодня, 25 октября», «Вчера, 24 октября», «Пт, 23 октября», для другого года — с годом.
 export function dateLabel(iso: string, todayIso = today()): string {
   const date = fromIsoDate(iso);
-  const dayMonth = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long' }).format(date);
-  if (iso === todayIso) return `Сегодня, ${dayMonth}`;
-  if (iso === addDays(todayIso, -1)) return `Вчера, ${dayMonth}`;
-  const weekday = capitalize(new Intl.DateTimeFormat('ru-RU', { weekday: 'short' }).format(date));
+  if (iso === todayIso) return `Сегодня, ${dayMonth(date)}`;
+  if (iso === addDays(todayIso, -1)) return `Вчера, ${dayMonth(date)}`;
   const year = date.getFullYear() === fromIsoDate(todayIso).getFullYear() ? '' : ` ${date.getFullYear()}`;
-  return `${weekday}, ${dayMonth}${year}`;
+  return `${weekdayLabel(iso)}${year}`;
 }
 
 export const weekdayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
