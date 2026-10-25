@@ -111,13 +111,32 @@ describe('tiered price items', () => {
   });
 });
 
-describe('price addon in admin', () => {
-  it('saves and clears the addon', async () => {
-    const addon = { name: 'Оклейка в изоляцию', price: 100 };
-    const created = await api<AdminPriceItemDto>(admin.telegramId, 'POST', '/api/admin/price-items', { ...work, addon });
-    expect(created.body.addon).toEqual(addon);
-    const cleared = await api<AdminPriceItemDto>(admin.telegramId, 'PUT', `/api/admin/price-items/${created.body.id}`, work);
-    expect(cleared.body.addon).toBeNull();
+describe('deleting catalog items', () => {
+  it('deletes unused items but refuses items used in reports', async () => {
+    const { blocks, drilling, pipe } = await createCatalog();
+    const del = (path: string) =>
+      app.inject({ method: 'DELETE', url: path, headers: authHeader(admin.telegramId) }).then((r) => r.statusCode);
+
+    await app.inject({
+      method: 'POST',
+      url: '/api/reports',
+      headers: authHeader(installer.telegramId),
+      payload: { workDate: '2026-10-25', works: [{ priceItemId: blocks.id, qty: 1 }], materials: [{ materialId: pipe.id, qty: 1 }] },
+    });
+
+    expect(await del(`/api/admin/price-items/${blocks.id}`)).toBe(409);
+    expect(await del(`/api/admin/materials/${pipe.id}`)).toBe(409);
+    expect(await del(`/api/admin/price-items/${drilling.id}`)).toBe(204);
+    expect(await del(`/api/admin/price-items/${drilling.id}`)).toBe(404);
+
+    const catalog = await api<CatalogDto>(admin.telegramId, 'GET', '/api/catalog');
+    expect(catalog.body.priceItems.map((i) => i.id)).toEqual([blocks.id]);
+  });
+
+  it('is forbidden for installers', async () => {
+    const { drilling } = await createCatalog();
+    const res = await app.inject({ method: 'DELETE', url: `/api/admin/price-items/${drilling.id}`, headers: authHeader(installer.telegramId) });
+    expect(res.statusCode).toBe(403);
   });
 });
 

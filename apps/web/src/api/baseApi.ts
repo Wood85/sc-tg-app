@@ -58,6 +58,10 @@ export const baseApi = createApi({
           : { url: `/admin/price-items/${id}`, method: 'PUT', body },
       invalidatesTags: ['Catalog'],
     }),
+    deletePriceItem: build.mutation<void, number>({
+      query: (id) => ({ url: `/admin/price-items/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['Catalog'],
+    }),
     getAdminMaterials: build.query<AdminMaterialDto[], void>({
       query: () => '/admin/materials',
       providesTags: ['Catalog'],
@@ -67,6 +71,10 @@ export const baseApi = createApi({
         id === null
           ? { url: '/admin/materials', method: 'POST', body }
           : { url: `/admin/materials/${id}`, method: 'PUT', body },
+      invalidatesTags: ['Catalog'],
+    }),
+    deleteMaterial: build.mutation<void, number>({
+      query: (id) => ({ url: `/admin/materials/${id}`, method: 'DELETE' }),
       invalidatesTags: ['Catalog'],
     }),
     getAdminUsers: build.query<AdminUserDto[], void>({
@@ -91,8 +99,10 @@ export const {
   useSendReportMutation,
   useGetAdminPriceItemsQuery,
   useSavePriceItemMutation,
+  useDeletePriceItemMutation,
   useGetAdminMaterialsQuery,
   useSaveMaterialMutation,
+  useDeleteMaterialMutation,
   useGetAdminUsersQuery,
   useSaveUserMutation,
 } = baseApi;

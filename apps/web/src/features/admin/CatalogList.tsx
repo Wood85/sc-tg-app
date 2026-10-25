@@ -1,4 +1,4 @@
-import { type Category, categories, categoryLabels, formatMoney, type PriceAddon, type PriceTier } from '@sc/shared';
+import { type Category, categories, categoryLabels, type PriceTier } from '@sc/shared';
 import { Link } from 'react-router';
 import { errorMessage, useGetAdminMaterialsQuery, useGetAdminPriceItemsQuery } from '../../api/baseApi.ts';
 import { priceHint } from '../../ui/price.ts';
@@ -13,7 +13,6 @@ interface Row {
   unit: string;
   price?: number;
   tiers?: PriceTier[] | null;
-  addon?: PriceAddon | null;
   isActive: boolean;
 }
 
@@ -51,11 +50,6 @@ export function CatalogList({ kind }: { kind: CatalogKind }) {
                         ? priceHint({ price: row.price, unit: row.unit, tiers: row.tiers ?? null })
                         : row.unit}
                     </span>
-                    {row.addon && (
-                      <span className={styles.hint}>
-                        + {row.addon.name.toLowerCase()} {formatMoney(row.addon.price)} / {row.unit}
-                      </span>
-                    )}
                   </span>
                   {!row.isActive && <span className={styles.tag}>скрыто</span>}
                 </Link>

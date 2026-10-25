@@ -13,11 +13,12 @@ import { requireAdmin } from '../auth.ts';
 import { bot } from '../bot.ts';
 import { db } from '../db/index.ts';
 import { materials, priceItems, users } from '../db/schema.ts';
-import { HttpError, isUniqueViolation, parseOrThrow } from '../errors.ts';
+import { HttpError, isForeignKeyViolation, isUniqueViolation, parseOrThrow } from '../errors.ts';
 
 const paramsSchema = z.object({ id: z.coerce.number().int().positive() });
 
-// Позиции и людей не удаляем, а скрываем: на них ссылаются отправленные отчёты.
+// Позицию можно удалить, только пока её нет ни в одном отчёте; иначе — скрыть.
+// Людей не удаляем, а отключаем.
 const priceItemColumns = {
   id: priceItems.id,
   category: priceItems.category,
@@ -25,7 +26,6 @@ const priceItemColumns = {
   unit: priceItems.unit,
   price: priceItems.price,
   tiers: priceItems.tiers,
-  addon: priceItems.addon,
   isActive: priceItems.isActive,
 };
 const materialColumns = {
@@ -48,6 +48,16 @@ async function uniqueOr409<T>(action: () => Promise<T>, message: string): Promis
     return await action();
   } catch (err) {
     if (isUniqueViolation(err)) throw new HttpError(409, message);
+    throw err;
+  }
+}
+
+async function deleteUnused(action: () => Promise<unknown[]>, message: string) {
+  try {
+    const deleted = await action();
+    if (deleted.length === 0) throw new HttpError(404, 'Не найдено');
+  } catch (err) {
+    if (isForeignKeyViolation(err)) throw new HttpError(409, message);
     throw err;
   }
 }
@@ -91,6 +101,15 @@ export async function adminRoutes(app: FastifyInstance) {
     return found(row);
   });
 
+  app.delete('/price-items/:id', async (req, reply) => {
+    const { id } = parseOrThrow(paramsSchema, req.params);
+    await deleteUnused(
+      () => db.delete(priceItems).where(eq(priceItems.id, id)).returning({ id: priceItems.id }),
+      'Работа уже есть в отчётах — её можно только скрыть',
+    );
+    return reply.code(204).send();
+  });
+
   app.get('/materials', async (): Promise<AdminMaterialDto[]> =>
     db
       .select(materialColumns)
@@ -120,6 +139,15 @@ export async function adminRoutes(app: FastifyInstance) {
       'Такой материал уже есть в этой категории',
     );
     return found(row);
+  });
+
+  app.delete('/materials/:id', async (req, reply) => {
+    const { id } = parseOrThrow(paramsSchema, req.params);
+    await deleteUnused(
+      () => db.delete(materials).where(eq(materials.id, id)).returning({ id: materials.id }),
+      'Материал уже есть в отчётах — его можно только скрыть',
+    );
+    return reply.code(204).send();
   });
 
   app.get('/users', async (): Promise<AdminUserDto[]> =>

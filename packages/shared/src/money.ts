@@ -25,17 +25,6 @@ export function unitPriceFor(item: { price: number; tiers: PriceTier[] | null },
   return item.tiers ? tierPrice(item.tiers, qty) : item.price;
 }
 
-// Доплата к работе за часть объёма, например «Оклейка в изоляцию» +1 ₾ за метр воздуховода.
-export interface PriceAddon {
-  name: string;
-  price: number;
-}
-
-// Сумма строки работы с учётом доплаты.
-export function workAmount(qty: number, unitPrice: number, addonQty = 0, addonPrice = 0): number {
-  return lineAmount(qty, unitPrice) + (addonQty > 0 ? lineAmount(addonQty, addonPrice) : 0);
-}
-
 // Коэффициент за работы на высоте выше 4,5 м — применяется ко всей сумме отчёта.
 export const HEIGHT_COEFFICIENT_PERCENT = 120;
 

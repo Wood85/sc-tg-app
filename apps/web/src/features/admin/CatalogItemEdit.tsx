@@ -5,7 +5,6 @@ import {
   formatMoneyInput,
   parseMoneyInput,
   parseQtyInput,
-  type PriceAddon,
   type PriceTier,
   priceTiersSchema,
 } from '@sc/shared';
@@ -13,18 +12,19 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import {
   errorMessage,
+  useDeleteMaterialMutation,
+  useDeletePriceItemMutation,
   useGetAdminMaterialsQuery,
   useGetAdminPriceItemsQuery,
   useSaveMaterialMutation,
   useSavePriceItemMutation,
 } from '../../api/baseApi.ts';
-import { haptic, isInsideTelegram, useMainButton } from '../../telegram.ts';
+import { confirmAction, haptic, isInsideTelegram, useMainButton } from '../../telegram.ts';
 import styles from '../../ui/ui.module.css';
 import { BackLink } from './BackLink.tsx';
 import type { CatalogKind } from './CatalogList.tsx';
 
 const commonUnits = ['шт', 'м', 'п.м.', 'м²', 'компл.'];
-const defaultAddonName = 'Оклейка в изоляцию';
 
 // Ступень в форме: строки как ввёл админ; у последней ступени границы нет.
 interface TierValues {
@@ -39,9 +39,6 @@ interface Values {
   price: string;
   tiered: boolean;
   tiers: TierValues[];
-  hasAddon: boolean;
-  addonName: string;
-  addonPrice: string;
   isActive: boolean;
 }
 
@@ -83,23 +80,9 @@ export function CatalogItemEdit({ kind }: { kind: CatalogKind }) {
         price: priceItem ? formatMoneyInput(priceItem.price) : '',
         tiered: Boolean(priceItem?.tiers),
         tiers: priceItem?.tiers ? toTierValues(priceItem.tiers) : [],
-        hasAddon: Boolean(priceItem?.addon),
-        addonName: priceItem?.addon?.name ?? defaultAddonName,
-        addonPrice: priceItem?.addon ? formatMoneyInput(priceItem.addon.price) : '',
         isActive: existing.isActive,
       }
-    : {
-        category: 'conditioning',
-        name: '',
-        unit: 'шт',
-        price: '',
-        tiered: false,
-        tiers: [],
-        hasAddon: false,
-        addonName: defaultAddonName,
-        addonPrice: '',
-        isActive: true,
-      };
+    : { category: 'conditioning', name: '', unit: 'шт', price: '', tiered: false, tiers: [], isActive: true };
 
   // key сбрасывает состояние формы при переходе к другой позиции.
   return <CatalogItemForm key={idParam} kind={kind} id={id} initial={initial} />;
@@ -111,6 +94,8 @@ function CatalogItemForm({ kind, id, initial }: { kind: CatalogKind; id: number 
   const [error, setError] = useState<string>();
   const [savePriceItem, priceState] = useSavePriceItemMutation();
   const [saveMaterial, materialState] = useSaveMaterialMutation();
+  const [deletePriceItem] = useDeletePriceItemMutation();
+  const [deleteMaterial] = useDeleteMaterialMutation();
   const saving = priceState.isLoading || materialState.isLoading;
   const listPath = `/admin/${kind}`;
 
@@ -142,29 +127,35 @@ function CatalogItemForm({ kind, id, initial }: { kind: CatalogKind; id: number 
     if (!values.name.trim() || !values.unit.trim()) return fail('Заполните название и единицу измерения');
     const base = { category: values.category, name: values.name.trim(), unit: values.unit.trim(), isActive: values.isActive };
 
-    let pricing: { price: number; tiers: PriceTier[] | null; addon: PriceAddon | null } | undefined;
+    let pricing: { price: number; tiers: PriceTier[] | null } | undefined;
     if (kind === 'works') {
-      let addon: PriceAddon | null = null;
-      if (values.hasAddon) {
-        const addonPrice = parseMoneyInput(values.addonPrice);
-        if (!values.addonName.trim()) return fail('Укажите название доплаты');
-        if (addonPrice === undefined) return fail('Доплата — число в лари, например 1');
-        addon = { name: values.addonName.trim(), price: addonPrice };
-      }
       if (values.tiered) {
         const tiers = parseTiers(values.tiers);
         if (typeof tiers === 'string') return fail(tiers);
-        pricing = { price: tiers[0]!.price, tiers, addon };
+        pricing = { price: tiers[0]!.price, tiers };
       } else {
         const price = parseMoneyInput(values.price);
         if (price === undefined) return fail('Цена — число в лари, например 25 или 25,50');
-        pricing = { price, tiers: null, addon };
+        pricing = { price, tiers: null };
       }
     }
 
     try {
       if (pricing) await savePriceItem({ id, body: { ...base, ...pricing } }).unwrap();
       else await saveMaterial({ id, body: base }).unwrap();
+      haptic('success');
+      navigate(listPath);
+    } catch (err) {
+      fail(errorMessage(err));
+    }
+  }
+
+  async function remove() {
+    if (id === null) return;
+    if (!(await confirmAction(`Удалить «${values.name}»?`))) return;
+    try {
+      if (kind === 'works') await deletePriceItem(id).unwrap();
+      else await deleteMaterial(id).unwrap();
       haptic('success');
       navigate(listPath);
     } catch (err) {
@@ -290,30 +281,6 @@ function CatalogItemForm({ kind, id, initial }: { kind: CatalogKind; id: number 
             </button>
           </div>
         )}
-        {kind === 'works' && (
-          <label className={styles.checkboxRow}>
-            <input type="checkbox" checked={values.hasAddon} onChange={(e) => set('hasAddon', e.target.checked)} />
-            Доплата за часть объёма (например, оклейка в изоляцию)
-          </label>
-        )}
-        {kind === 'works' && values.hasAddon && (
-          <div className={styles.tierRow}>
-            <input
-              className={styles.input}
-              placeholder="Название доплаты"
-              value={values.addonName}
-              onChange={(e) => set('addonName', e.target.value)}
-            />
-            <input
-              className={styles.qtyInput}
-              inputMode="decimal"
-              placeholder="₾"
-              value={values.addonPrice}
-              onChange={(e) => set('addonPrice', e.target.value)}
-            />
-            <span className={styles.unit}>/ {values.unit || 'ед.'}</span>
-          </div>
-        )}
         <label className={styles.checkboxRow}>
           <input type="checkbox" checked={values.isActive} onChange={(e) => set('isActive', e.target.checked)} />
           Показывать в форме отчёта
@@ -326,6 +293,11 @@ function CatalogItemForm({ kind, id, initial }: { kind: CatalogKind; id: number 
       {!isInsideTelegram && (
         <button className={styles.submit} type="submit" disabled={saving}>
           {saving ? 'Сохранение…' : 'Сохранить'}
+        </button>
+      )}
+      {id !== null && (
+        <button type="button" className={styles.dangerButton} onClick={() => void remove()}>
+          Удалить
         </button>
       )}
     </form>

@@ -11,7 +11,6 @@ describe('formatGroupMessage', () => {
       works: [
         { category: 'ventilation', name: 'Отверстие под приточку ⌀100', unit: 'шт', qty: 2 },
         { category: 'conditioning', name: 'Монтаж блоков', unit: 'шт', qty: 2 },
-        { category: 'ventilation', name: 'Прокладка воздуховода 110×60', unit: 'м', qty: 10, addonName: 'Оклейка в изоляцию', addonQty: 6 },
       ],
       materials: [{ category: 'ventilation', name: 'Труба ⌀110', unit: 'м', qty: 0.3 }],
       comment: 'Приточка без монтажа',
@@ -29,7 +28,6 @@ describe('formatGroupMessage', () => {
         '• Монтаж блоков — 2 шт',
         '🌀 Вентиляция',
         '• Отверстие под приточку ⌀100 — 2 шт',
-        '• Прокладка воздуховода 110×60 — 10 м (оклейка в изоляцию — 6 м)',
         '',
         '📦 <b>Материалы</b>',
         '🌀 Вентиляция',

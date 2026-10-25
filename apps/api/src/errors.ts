@@ -16,8 +16,17 @@ export function parseOrThrow<T extends z.ZodType>(schema: T, value: unknown): z.
   return result.data;
 }
 
-// Нарушение уникального индекса Postgres. Drizzle оборачивает ошибку драйвера в cause.
-export function isUniqueViolation(err: unknown): boolean {
+// Код ошибки Postgres. Drizzle оборачивает ошибку драйвера в cause.
+function pgErrorCode(err: unknown): unknown {
   const codeOf = (e: unknown) => (e && typeof e === 'object' && 'code' in e ? e.code : undefined);
-  return codeOf(err) === '23505' || (err instanceof Error && codeOf(err.cause) === '23505');
+  return codeOf(err) ?? (err instanceof Error ? codeOf(err.cause) : undefined);
+}
+
+export function isUniqueViolation(err: unknown): boolean {
+  return pgErrorCode(err) === '23505';
+}
+
+// На запись ссылаются другие таблицы (например, позиция прайса — из отчётов).
+export function isForeignKeyViolation(err: unknown): boolean {
+  return pgErrorCode(err) === '23503';
 }

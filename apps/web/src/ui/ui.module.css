@@ -84,21 +84,8 @@ textarea.input {
   border-bottom: 1px solid var(--tg-theme-section-separator-color, rgba(128, 128, 128, 0.15));
 }
 
-.itemBlock {
-  border-bottom: 1px solid var(--tg-theme-section-separator-color, rgba(128, 128, 128, 0.15));
-}
-
-.itemBlock:last-child {
+.itemRow:last-child {
   border-bottom: none;
-}
-
-.itemBlock .itemRow {
-  border-bottom: none;
-}
-
-.addonRow {
-  padding-left: 16px;
-  font-size: 14px;
 }
 
 .itemSelected .itemName {
@@ -300,4 +287,13 @@ textarea.input {
   line-height: 1;
   background: none;
   color: var(--tg-theme-hint-color, #999);
+}
+
+.dangerButton {
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  font: inherit;
+  background: transparent;
+  color: var(--tg-theme-destructive-text-color, #e53935);
 }

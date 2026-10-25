@@ -5,14 +5,7 @@ export interface GroupMessageInput {
   location: string;
   workDate: string;
   participants: string[];
-  works: {
-    category: Category;
-    name: string;
-    unit: string;
-    qty: number;
-    addonName?: string | null;
-    addonQty?: number | null;
-  }[];
+  works: { category: Category; name: string; unit: string; qty: number }[];
   materials: { category: Category; name: string; unit: string; qty: number }[];
   comment: string;
   atHeight: boolean;
@@ -46,11 +39,7 @@ function formatLines(lines: GroupMessageInput['works']): string[] {
     if (items.length === 0) continue;
     result.push(`${categoryIcons[category]} ${categoryLabels[category]}`);
     for (const item of items) {
-      const addon =
-        item.addonName && item.addonQty
-          ? ` (${escapeHtml(item.addonName.toLowerCase())} — ${formatQty(item.addonQty)} ${escapeHtml(item.unit)})`
-          : '';
-      result.push(`• ${escapeHtml(item.name)} — ${formatQty(item.qty)} ${escapeHtml(item.unit)}${addon}`);
+      result.push(`• ${escapeHtml(item.name)} — ${formatQty(item.qty)} ${escapeHtml(item.unit)}`);
     }
   }
   return result;

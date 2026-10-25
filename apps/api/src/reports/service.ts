@@ -1,12 +1,12 @@
 import {
   type EarningsDto,
+  lineAmount,
   type ReportDraft,
   reportTotal,
   type ReportDto,
   type ReportListItemDto,
   splitEqually,
   unitPriceFor,
-  workAmount,
 } from '@sc/shared';
 import { and, asc, between, count, desc, eq, inArray, sql } from 'drizzle-orm';
 import { GrammyError } from 'grammy';
@@ -34,7 +34,7 @@ async function writeContent(tx: Tx, reportId: number, authorId: number, input: R
   const prices =
     priceIds.length > 0
       ? await tx
-          .select({ id: priceItems.id, price: priceItems.price, tiers: priceItems.tiers, addon: priceItems.addon })
+          .select({ id: priceItems.id, price: priceItems.price, tiers: priceItems.tiers })
           .from(priceItems)
           .where(and(inArray(priceItems.id, priceIds), eq(priceItems.isActive, true)))
       : [];
@@ -42,20 +42,8 @@ async function writeContent(tx: Tx, reportId: number, authorId: number, input: R
   const works = input.works.map((w) => {
     const item = priceItemById.get(w.priceItemId);
     if (!item) throw new HttpError(400, `Unknown price item ${w.priceItemId}`);
-    if (w.addonQty && !item.addon) throw new HttpError(400, `Price item ${w.priceItemId} has no addon`);
     const unitPrice = unitPriceFor(item, w.qty);
-    const addonQty = w.addonQty && item.addon ? w.addonQty : null;
-    const addonPrice = addonQty && item.addon ? item.addon.price : null;
-    return {
-      reportId,
-      priceItemId: w.priceItemId,
-      qty: w.qty,
-      unitPriceSnapshot: unitPrice,
-      addonNameSnapshot: addonQty ? (item.addon?.name ?? null) : null,
-      addonQty,
-      addonPriceSnapshot: addonPrice,
-      amount: workAmount(w.qty, unitPrice, addonQty ?? 0, addonPrice ?? 0),
-    };
+    return { reportId, priceItemId: w.priceItemId, qty: w.qty, unitPriceSnapshot: unitPrice, amount: lineAmount(w.qty, unitPrice) };
   });
 
   const materialIds = [...new Set(input.materials.map((m) => m.materialId))];
@@ -158,9 +146,6 @@ export async function getReport(userId: number, reportId: number): Promise<Repor
         unit: priceItems.unit,
         qty: reportWorks.qty,
         unitPrice: reportWorks.unitPriceSnapshot,
-        addonName: reportWorks.addonNameSnapshot,
-        addonQty: reportWorks.addonQty,
-        addonPrice: reportWorks.addonPriceSnapshot,
         amount: reportWorks.amount,
       })
       .from(reportWorks)
@@ -246,7 +231,7 @@ export async function sendReport(userId: number, reportId: number): Promise<Repo
         comment: draft.comment,
         atHeight: draft.atHeight,
         participantIds: draft.participants.map((p) => p.id),
-        works: draft.works.map((w) => ({ priceItemId: w.priceItemId, qty: w.qty, addonQty: w.addonQty ?? undefined })),
+        works: draft.works.map((w) => ({ priceItemId: w.priceItemId, qty: w.qty })),
         materials: draft.materials.map((m) => ({ materialId: m.materialId, qty: m.qty })),
       }),
     );

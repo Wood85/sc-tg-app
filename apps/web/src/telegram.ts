@@ -55,6 +55,12 @@ export function useBackButton(onBack: () => void) {
   }, []);
 }
 
+// Подтверждение действия: нативный диалог Telegram или confirm в браузере.
+export function confirmAction(message: string): Promise<boolean> {
+  if (!isInsideTelegram) return Promise.resolve(window.confirm(message));
+  return new Promise((resolve) => tg.showConfirm(message, resolve));
+}
+
 export function haptic(type: 'success' | 'error') {
   if (isInsideTelegram) tg.HapticFeedback.notificationOccurred(type);
 }

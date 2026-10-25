@@ -3,17 +3,9 @@
 //
 // seed/price_items.csv: category;name;unit;price;tiers   (цена в лари, «25» или «25,50»)
 //   tiers — необязательные ступени по количеству: «6:8|10:7|*:6» = до 6 — 8 ₾, до 10 — 7 ₾, больше — 6 ₾
-//   addon — необязательная доплата: «Оклейка в изоляцию:1» = +1 ₾ за единицу
 // seed/materials.csv:   category;name;unit
 // Разделитель «;» (так сохраняет Excel) или «,». Категория: «Кондиционирование» / «Вентиляция».
-import {
-  type Category,
-  categories,
-  categoryLabels,
-  type PriceAddon,
-  type PriceTier,
-  priceTiersSchema,
-} from '@sc/shared';
+import { type Category, categories, categoryLabels, type PriceTier, priceTiersSchema } from '@sc/shared';
 import { sql } from 'drizzle-orm';
 import { existsSync, readFileSync } from 'node:fs';
 import { env } from '../env.ts';
@@ -56,14 +48,6 @@ function parseTiers(value: string, line: number): PriceTier[] | null {
   return result.data;
 }
 
-function parseAddon(value: string, line: number): PriceAddon | null {
-  if (!value.trim()) return null;
-  const separator = value.lastIndexOf(':');
-  const name = value.slice(0, separator).trim();
-  if (separator < 1 || !name) throw new Error(`Line ${line}: invalid addon "${value}"`);
-  return { name, price: parsePrice(value.slice(separator + 1), line) };
-}
-
 for (const telegramId of env.ADMIN_TELEGRAM_IDS) {
   await db
     .insert(users)
@@ -85,7 +69,6 @@ if (priceRows) {
         unit: row.unit ?? '',
         price: tiers ? tiers[0]!.price : parsePrice(row.price ?? '', line),
         tiers,
-        addon: parseAddon(row.addon ?? '', line),
         sortOrder: i,
       })
       .onConflictDoUpdate({
@@ -94,7 +77,6 @@ if (priceRows) {
           unit: sql`excluded.unit`,
           price: sql`excluded.price`,
           tiers: sql`excluded.tiers`,
-          addon: sql`excluded.addon`,
           sortOrder: sql`excluded.sort_order`,
         },
       });

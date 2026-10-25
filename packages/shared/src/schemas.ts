@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { PriceAddon, PriceTier } from './money.ts';
+import type { PriceTier } from './money.ts';
 
 export const categories = ['conditioning', 'ventilation'] as const;
 export const categorySchema = z.enum(categories);
@@ -30,16 +30,7 @@ export const reportDraftSchema = z.object({
   // Остальные участники бригады, автор добавляется на бэкенде автоматически.
   participantIds: z.array(z.number().int().positive()).max(20).default([]),
   works: z
-    .array(
-      z
-        .object({
-          priceItemId: z.number().int().positive(),
-          qty: qtySchema,
-          // Сколько из qty с доплатой (например, в изоляции).
-          addonQty: qtySchema.optional(),
-        })
-        .refine((w) => w.addonQty === undefined || w.addonQty <= w.qty, 'Доплата не может быть больше объёма работы'),
-    )
+    .array(z.object({ priceItemId: z.number().int().positive(), qty: qtySchema }))
     .default([]),
   materials: z
     .array(z.object({ materialId: z.number().int().positive(), qty: qtySchema }))
@@ -64,8 +55,6 @@ export type MaterialInput = z.input<typeof materialInputSchema>;
 
 const priceSchema = z.number().int().min(0).max(100_000_000);
 
-export const priceAddonSchema = z.object({ name: z.string().trim().min(1).max(100), price: priceSchema });
-
 // Ступени по возрастанию границы, у последней граница null («и больше»).
 export const priceTiersSchema = z
   .array(z.object({ upTo: z.number().positive().nullable(), price: priceSchema }))
@@ -83,7 +72,6 @@ export const priceItemInputSchema = materialInputSchema
   .extend({
     price: priceSchema,
     tiers: priceTiersSchema.nullable().default(null),
-    addon: priceAddonSchema.nullable().default(null),
   })
   .transform((item) => (item.tiers ? { ...item, price: item.tiers[0]!.price } : item));
 export type PriceItemInput = z.input<typeof priceItemInputSchema>;
@@ -112,7 +100,6 @@ export interface PriceItemDto {
   unit: string;
   price: number;
   tiers: PriceTier[] | null;
-  addon: PriceAddon | null;
 }
 
 export interface AdminPriceItemDto extends PriceItemDto {
@@ -181,9 +168,6 @@ export interface ReportDto {
     unit: string;
     qty: number;
     unitPrice: number;
-    addonName: string | null;
-    addonQty: number | null;
-    addonPrice: number | null;
     amount: number;
   }[];
   materials: {

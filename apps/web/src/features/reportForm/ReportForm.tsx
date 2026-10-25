@@ -1,12 +1,12 @@
 import {
   formatMoney,
+  lineAmount,
   type MeDto,
   parseQtyInput,
   type ReportDto,
   reportTotal,
   splitEqually,
   unitPriceFor,
-  workAmount,
 } from '@sc/shared';
 import { useState } from 'react';
 import {
@@ -68,9 +68,7 @@ function ReportFormBody({ me, onSent }: { me: MeDto; onSent: (report: ReportDto)
   const lineAmounts = Object.entries(form.works).map(([id, raw]) => {
     const qty = parseQtyInput(raw);
     const item = priceItemById.get(Number(id));
-    if (!qty || !item) return 0;
-    const addonQty = item.addon ? (parseQtyInput(form.workAddons[Number(id)] ?? '') ?? 0) : 0;
-    return workAmount(qty, unitPriceFor(item, qty), addonQty, item.addon?.price ?? 0);
+    return qty && item ? lineAmount(qty, unitPriceFor(item, qty)) : 0;
   });
   const total = reportTotal(lineAmounts, form.atHeight);
   const myShare = splitEqually(total, 1 + form.participantIds.length)[0] ?? 0;
@@ -185,9 +183,6 @@ function ReportFormBody({ me, onSent }: { me: MeDto; onSent: (report: ReportDto)
         values={form.works}
         isInvalid={(id) => visibleErrors.invalidQtyIds.has(`works:${id}`)}
         onChange={(id, value) => dispatch(qtyChanged({ kind: 'works', id, value }))}
-        addonValues={form.workAddons}
-        isAddonInvalid={(id) => visibleErrors.invalidQtyIds.has(`workAddons:${id}`)}
-        onAddonChange={(id, value) => dispatch(qtyChanged({ kind: 'workAddons', id, value }))}
       />
 
       <ItemPicker
