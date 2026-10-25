@@ -16,6 +16,9 @@ export function AdminLayout() {
         <NavLink to="/admin/users" className={tabClass}>
           Люди
         </NavLink>
+        <NavLink to="/admin/wages" className={tabClass}>
+          Оклад
+        </NavLink>
       </nav>
       <Outlet />
     </>

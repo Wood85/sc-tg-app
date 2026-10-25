@@ -5,6 +5,8 @@ import {
   materialInputSchema,
   priceItemInputSchema,
   userInputSchema,
+  type WageRates,
+  wageRatesSchema,
 } from '@sc/shared';
 import { asc, desc, eq, sql } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
@@ -14,6 +16,7 @@ import { bot } from '../bot.ts';
 import { db } from '../db/index.ts';
 import { materials, priceItems, users } from '../db/schema.ts';
 import { HttpError, isForeignKeyViolation, isUniqueViolation, parseOrThrow } from '../errors.ts';
+import { getWageRates, setWageRates } from '../wages.ts';
 
 const paramsSchema = z.object({ id: z.coerce.number().int().positive() });
 
@@ -148,6 +151,14 @@ export async function adminRoutes(app: FastifyInstance) {
       'Материал уже есть в отчётах — его можно только скрыть',
     );
     return reply.code(204).send();
+  });
+
+  // Новые ставки применяются к дням, оклад за которые ещё не начислен.
+  app.get('/wage-rates', async (): Promise<WageRates> => getWageRates());
+
+  app.put('/wage-rates', async (req): Promise<WageRates> => {
+    await setWageRates(parseOrThrow(wageRatesSchema, req.body));
+    return getWageRates();
   });
 
   app.get('/users', async (): Promise<AdminUserDto[]> =>

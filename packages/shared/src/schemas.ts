@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { PriceTier } from './money.ts';
+import type { PriceTier, WageRates } from './money.ts';
 
 export const categories = ['conditioning', 'ventilation'] as const;
 export const categorySchema = z.enum(categories);
@@ -93,6 +93,8 @@ export const userInputSchema = z.object({
 });
 export type UserInput = z.input<typeof userInputSchema>;
 
+export const wageRatesSchema = z.object({ weekday: priceSchema, weekend: priceSchema });
+
 export const earningsQuerySchema = z.object({ from: isoDateSchema, to: isoDateSchema });
 
 export interface MeDto {
@@ -129,6 +131,7 @@ export interface AdminMaterialDto extends MaterialDto {
 export interface CatalogDto {
   priceItems: PriceItemDto[];
   materials: MaterialDto[];
+  wageRates: WageRates;
 }
 
 export interface UserBriefDto {
@@ -195,6 +198,7 @@ export interface PhotoDto {
 }
 
 export interface EarningsDto {
-  days: { date: string; amount: number; reports: number }[];
+  // amount — всё за день: доли по отчётам + оклад; wage — оклад отдельно (0, если не начислен).
+  days: { date: string; amount: number; wage: number; reports: number }[];
   total: number;
 }

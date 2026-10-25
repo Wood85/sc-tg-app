@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { formatMoneyInput, lineAmount, parseMoneyInput, reportTotal, splitEqually, tierPrice } from './money.ts';
+import {
+  formatMoneyInput,
+  lineAmount,
+  parseMoneyInput,
+  reportTotal,
+  splitEqually,
+  tierPrice,
+  wageFor,
+} from './money.ts';
 
 describe('lineAmount', () => {
   it('multiplies fractional quantities without float drift', () => {
@@ -64,5 +72,16 @@ describe('reportTotal', () => {
     expect(reportTotal([1000, 2333], false)).toBe(3333);
     expect(reportTotal([1000, 2333], true)).toBe(4000);
     expect(reportTotal([1], true)).toBe(1);
+  });
+});
+
+describe('wageFor', () => {
+  const rates = { weekday: 7000, weekend: 10000 };
+
+  it('pays the weekend rate on Saturday and Sunday by the work date', () => {
+    expect(wageFor('2026-10-23', rates)).toBe(7000); // пятница
+    expect(wageFor('2026-10-24', rates)).toBe(10000); // суббота
+    expect(wageFor('2026-10-25', rates)).toBe(10000); // воскресенье
+    expect(wageFor('2026-10-26', rates)).toBe(7000); // понедельник
   });
 });

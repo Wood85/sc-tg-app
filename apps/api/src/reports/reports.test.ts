@@ -5,7 +5,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { authHeader, createCatalog, createUser, mockTelegram, resetDb } from '../../test/helpers.ts';
 import { buildApp } from '../app.ts';
 import { client, db } from '../db/index.ts';
-import { priceItems, type User } from '../db/schema.ts';
+import { dailyWages, priceItems, type User } from '../db/schema.ts';
+import { setWageRates } from '../wages.ts';
 
 const telegram = mockTelegram();
 const sent = telegram.sent;
@@ -210,11 +211,12 @@ describe('tiered prices and height coefficient', () => {
 });
 
 describe('earnings', () => {
-  it('sums sent reports by day within the range', async () => {
+  it('sums sent reports and the daily wage by day within the range', async () => {
     const send = async (workDate: string, participantIds: number[]) => {
       const { body } = await api<ReportDto>(ivan, 'POST', '/api/reports', draft({ workDate, participantIds }));
       await api(ivan, 'POST', `/api/reports/${body.id}/send`);
     };
+    // 24 и 25 октября 2026 — суббота и воскресенье: оклад 100 ₾.
     await send('2026-10-24', [sergey.id]); // Иван 66,67 ₾, Сергей 66,66 ₾
     await send('2026-10-24', []); // Иван 133,33 ₾
     await send('2026-10-25', [sergey.id]);
@@ -225,15 +227,60 @@ describe('earnings', () => {
     const mine = await api<EarningsDto>(ivan, 'GET', query);
     expect(mine.body).toEqual({
       days: [
-        { date: '2026-10-24', amount: 20_000, reports: 2 },
-        { date: '2026-10-25', amount: 6_667, reports: 1 },
+        { date: '2026-10-24', amount: 30_000, wage: 10_000, reports: 2 },
+        { date: '2026-10-25', amount: 16_667, wage: 10_000, reports: 1 },
       ],
-      total: 26_667,
+      total: 46_667,
     });
 
     const his = await api<EarningsDto>(sergey, 'GET', query);
-    expect(his.body.total).toBe(13_332);
+    expect(his.body.total).toBe(33_332);
 
     expect((await api(ivan, 'GET', '/api/me/earnings?from=2026-11-01&to=2026-10-01')).status).toBe(400);
+  });
+});
+
+describe('daily wage', () => {
+  const sendOn = async (author: User, workDate: string, overrides: Partial<ReportDraftInput> = {}) => {
+    const { body } = await api<ReportDto>(author, 'POST', '/api/reports', draft({ workDate, ...overrides }));
+    await api(author, 'POST', `/api/reports/${body.id}/send`);
+  };
+  const wageOf = async (user: User, date: string) =>
+    (await api<EarningsDto>(user, 'GET', `/api/me/earnings?from=${date}&to=${date}`)).body.days[0]?.wage;
+
+  it('pays every participant once per day, weekday or weekend rate', async () => {
+    // Пятница: два отчёта за день — оклад один раз; Сергей был только во втором.
+    await sendOn(ivan, '2026-10-23', { participantIds: [] });
+    await sendOn(ivan, '2026-10-23', { participantIds: [sergey.id] });
+    expect(await wageOf(ivan, '2026-10-23')).toBe(7_000);
+    expect(await wageOf(sergey, '2026-10-23')).toBe(7_000);
+    expect(await db.select().from(dailyWages)).toHaveLength(2);
+
+    await sendOn(ivan, '2026-10-24', { participantIds: [] }); // суббота
+    expect(await wageOf(ivan, '2026-10-24')).toBe(10_000);
+  });
+
+  it('is not multiplied for work at height and not paid for drafts', async () => {
+    await sendOn(ivan, '2026-10-22', { participantIds: [], atHeight: true });
+    expect(await wageOf(ivan, '2026-10-22')).toBe(7_000);
+
+    await api(ivan, 'POST', '/api/reports', draft({ workDate: '2026-10-21' }));
+    expect(await db.select().from(dailyWages)).toHaveLength(1);
+  });
+
+  it('keeps the wage of a day once paid when rates change later', async () => {
+    await sendOn(ivan, '2026-10-20', { participantIds: [] });
+    await setWageRates({ weekday: 8_000, weekend: 12_000 });
+    await sendOn(ivan, '2026-10-20', { participantIds: [] });
+    await sendOn(ivan, '2026-10-19', { participantIds: [] });
+
+    expect(await wageOf(ivan, '2026-10-20')).toBe(7_000);
+    expect(await wageOf(ivan, '2026-10-19')).toBe(8_000);
+  });
+
+  it('is not paid when sending to the group fails', async () => {
+    telegram.down = true;
+    await sendOn(ivan, '2026-10-20', { participantIds: [] });
+    expect(await db.select().from(dailyWages)).toHaveLength(0);
   });
 });

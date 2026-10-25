@@ -1,4 +1,4 @@
-import type { AdminPriceItemDto, AdminUserDto, CatalogDto, MeDto } from '@sc/shared';
+import type { AdminPriceItemDto, AdminUserDto, CatalogDto, MeDto, WageRates } from '@sc/shared';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { authHeader, createCatalog, createUser, mockTelegram, resetDb } from '../../test/helpers.ts';
@@ -137,6 +137,21 @@ describe('deleting catalog items', () => {
     const { drilling } = await createCatalog();
     const res = await app.inject({ method: 'DELETE', url: `/api/admin/price-items/${drilling.id}`, headers: authHeader(installer.telegramId) });
     expect(res.statusCode).toBe(403);
+  });
+});
+
+describe('wage rates', () => {
+  it('lets admins change the rates and shows them in the catalog', async () => {
+    const defaults = await api<WageRates>(admin.telegramId, 'GET', '/api/admin/wage-rates');
+    expect(defaults.body).toEqual({ weekday: 7_000, weekend: 10_000 });
+
+    const updated = await api<WageRates>(admin.telegramId, 'PUT', '/api/admin/wage-rates', { weekday: 7_500, weekend: 11_000 });
+    expect(updated.body).toEqual({ weekday: 7_500, weekend: 11_000 });
+    const catalog = await api<CatalogDto>(installer.telegramId, 'GET', '/api/catalog');
+    expect(catalog.body.wageRates).toEqual({ weekday: 7_500, weekend: 11_000 });
+
+    expect((await api(admin.telegramId, 'PUT', '/api/admin/wage-rates', { weekday: -1, weekend: 1 })).status).toBe(400);
+    expect((await api(installer.telegramId, 'PUT', '/api/admin/wage-rates', { weekday: 1, weekend: 1 })).status).toBe(403);
   });
 });
 

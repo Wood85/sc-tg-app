@@ -33,6 +33,24 @@ export function reportTotal(lineAmounts: number[], atHeight: boolean): number {
   return atHeight ? Math.round((sum * HEIGHT_COEFFICIENT_PERCENT) / 100) : sum;
 }
 
+// Дневной оклад: каждому, кто работал в этот день, один раз за день.
+// Выходной или будний — по дате работ. Коэффициент за высоту на оклад не влияет.
+export interface WageRates {
+  weekday: number;
+  weekend: number;
+}
+
+export const DEFAULT_WAGE_RATES: WageRates = { weekday: 7000, weekend: 10000 };
+
+export function isWeekend(isoDate: string): boolean {
+  const day = new Date(`${isoDate}T00:00:00Z`).getUTCDay();
+  return day === 0 || day === 6;
+}
+
+export function wageFor(isoDate: string, rates: WageRates): number {
+  return isWeekend(isoDate) ? rates.weekend : rates.weekday;
+}
+
 // Делим сумму поровну между участниками. Остаток в тетри достаётся первому (автору отчёта),
 // так что сумма долей всегда равна total.
 export function splitEqually(total: number, count: number): number[] {
