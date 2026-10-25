@@ -97,10 +97,9 @@ describe('sending the weekly payroll', () => {
 
     expect(telegram.sent.map((m) => m.chat_id)).toEqual([admin.telegramId]);
     const text = telegram.sent[0]!.text;
-    expect(text).toContain('💰 <b>На выплату: Иван Петров</b>');
-    expect(text).toContain('Неделя 19–25 октября');
-    expect(text).toContain('📅 <b>Пн, 19 октября — 145,00 ₾</b>');
-    expect(text).toContain('📍 Багратиони 196И · 10 этаж — 50,00 ₾');
+    expect(text.startsWith('<b>Иван Петров</b>\nНа выплату за неделю 19–25 октября\n')).toBe(true);
+    expect(text).toContain('\n<b>Пн, 19 октября — 145,00 ₾</b>\n');
+    expect(text).toContain('\nБагратиони 196И · 10 этаж — 50,00 ₾\n');
     expect(text).toContain('  • Монтаж блоков — 1 шт');
     expect(text).toContain('Оклад: 100,00 ₾');
     expect(text).toContain('<b>Итого за неделю: 295,00 ₾</b>');
@@ -116,7 +115,7 @@ describe('sending the weekly payroll', () => {
 
     const again = await api<PayrollSendResultDto>(ivan, 'POST', '/api/payroll', { weekStart: '2026-10-19' });
     expect(again.body.statement.total).toBe(29_500 + 5_000 + 7_000);
-    expect(telegram.sent[0]!.text).toContain('(обновлён)');
+    expect(telegram.sent[0]!.text).toContain('На выплату за неделю 19–25 октября (обновлён)');
     expect(await db.select().from(payrollStatements)).toHaveLength(1);
   });
 
