@@ -608,3 +608,18 @@ textarea.input {
   max-height: 100%;
   object-fit: contain;
 }
+
+.weekTotals {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.weekTotals .section {
+  gap: 4px;
+}
+
+.weekAmount {
+  font-size: 20px;
+  font-weight: 700;
+}

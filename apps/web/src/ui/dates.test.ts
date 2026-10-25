@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addDays, addMonths, dateLabel, monthGrid, monthRange, monthTitle } from './dates.ts';
+import { addDays, addMonths, dateLabel, monthGrid, monthRange, monthTitle, rangeLabel, weekRange } from './dates.ts';
 
 describe('monthGrid', () => {
   it('starts weeks on Monday and pads to full weeks', () => {
@@ -29,6 +29,21 @@ describe('date arithmetic', () => {
   it('gives the first and last day of a month', () => {
     expect(monthRange({ year: 2026, month: 9 })).toEqual({ from: '2026-10-01', to: '2026-10-31' });
     expect(monthRange({ year: 2024, month: 1 })).toEqual({ from: '2024-02-01', to: '2024-02-29' });
+  });
+});
+
+describe('weeks', () => {
+  it('runs Monday to Sunday', () => {
+    // 26 октября 2026 — понедельник, 25-е — воскресенье.
+    expect(weekRange('2026-10-26')).toEqual({ from: '2026-10-26', to: '2026-11-01' });
+    expect(weekRange('2026-10-25')).toEqual({ from: '2026-10-19', to: '2026-10-25' });
+    expect(weekRange('2026-10-28', 1)).toEqual({ from: '2026-10-19', to: '2026-10-25' });
+    expect(weekRange('2026-10-01', 1)).toEqual({ from: '2026-09-21', to: '2026-09-27' });
+  });
+
+  it('labels ranges within and across months', () => {
+    expect(rangeLabel({ from: '2026-10-19', to: '2026-10-25' })).toBe('19–25 октября');
+    expect(rangeLabel({ from: '2026-09-28', to: '2026-10-04' })).toBe('28 сентября – 4 октября');
   });
 });
 

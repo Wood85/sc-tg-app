@@ -2,7 +2,17 @@ import { formatMoney } from '@sc/shared';
 import { useState } from 'react';
 import { errorMessage, useGetEarningsQuery } from '../../api/baseApi.ts';
 import { Chevron } from '../../ui/Chevron.tsx';
-import { addMonths, compareMonths, dateLabel, monthOf, monthRange, monthTitle, today } from '../../ui/dates.ts';
+import {
+  addMonths,
+  compareMonths,
+  dateLabel,
+  monthOf,
+  monthRange,
+  monthTitle,
+  rangeLabel,
+  today,
+  weekRange,
+} from '../../ui/dates.ts';
 import styles from '../../ui/ui.module.css';
 
 // Заработок по дням за месяц: доли по отправленным отчётам + дневной оклад.
@@ -15,6 +25,8 @@ export function EarningsPage() {
 
   return (
     <div className={styles.form}>
+      <WeekTotals />
+
       <div className={styles.calendarHeader}>
         <button
           type="button"
@@ -69,6 +81,32 @@ export function EarningsPage() {
           )}
         </>
       )}
+    </div>
+  );
+}
+
+// Итоги за текущую и прошлую неделю (пн–вс) — не зависят от выбранного месяца.
+function WeekTotals() {
+  const todayIso = today();
+  const current = weekRange(todayIso);
+  const previous = weekRange(todayIso, 1);
+  const { data } = useGetEarningsQuery({ from: previous.from, to: current.to });
+
+  const sum = ({ from, to }: { from: string; to: string }) =>
+    (data?.days ?? []).filter((d) => d.date >= from && d.date <= to).reduce((total, d) => total + d.amount, 0);
+
+  return (
+    <div className={styles.weekTotals}>
+      {[
+        { title: 'Эта неделя', range: current },
+        { title: 'Прошлая неделя', range: previous },
+      ].map(({ title, range }) => (
+        <section key={title} className={styles.section}>
+          <span className={styles.hint}>{title}</span>
+          <span className={styles.weekAmount}>{data ? formatMoney(sum(range)) : '…'}</span>
+          <span className={styles.hint}>{rangeLabel(range)}</span>
+        </section>
+      ))}
     </div>
   );
 }
