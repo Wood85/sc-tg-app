@@ -1,0 +1,22 @@
+{
+  "name": "sc-telegram-app",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.34.8",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter @sc/api --filter @sc/web dev",
+    "dev:api": "pnpm --filter @sc/api dev",
+    "dev:web": "pnpm --filter @sc/web dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "db:up": "docker compose up -d postgres",
+    "db:generate": "pnpm --filter @sc/api db:generate",
+    "db:migrate": "pnpm --filter @sc/api db:migrate",
+    "db:seed": "pnpm --filter @sc/api db:seed",
+    "db:studio": "pnpm --filter @sc/api db:studio"
+  }
+}
