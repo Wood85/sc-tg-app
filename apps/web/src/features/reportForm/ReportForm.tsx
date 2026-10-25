@@ -24,6 +24,7 @@ import { haptic, isInsideTelegram, useMainButton } from '../../telegram.ts';
 import { today } from '../../ui/dates.ts';
 import { DatePicker } from '../../ui/DatePicker.tsx';
 import { ItemPicker } from './ItemPicker.tsx';
+import { ParticipantsPicker } from './ParticipantsPicker.tsx';
 import { PhotoPicker } from './PhotoPicker.tsx';
 import styles from '../../ui/ui.module.css';
 import {
@@ -168,21 +169,11 @@ function ReportFormBody({ me, onSent }: { me: MeDto; onSent: (report: ReportDto)
       </section>
 
       {colleagues.length > 0 && (
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Кто работал со мной</h2>
-          <div className={styles.chips}>
-            {colleagues.map((u) => (
-              <button
-                key={u.id}
-                type="button"
-                className={`${styles.chip} ${form.participantIds.includes(u.id) ? styles.chipActive : ''}`}
-                onClick={() => dispatch(participantToggled(u.id))}
-              >
-                {u.name}
-              </button>
-            ))}
-          </div>
-        </section>
+        <ParticipantsPicker
+          colleagues={colleagues}
+          selectedIds={form.participantIds}
+          onToggle={(id) => dispatch(participantToggled(id))}
+        />
       )}
 
       <ItemPicker
