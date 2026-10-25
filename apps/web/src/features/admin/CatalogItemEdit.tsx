@@ -5,6 +5,7 @@ import {
   formatMoneyInput,
   parseMoneyInput,
   parseQtyInput,
+  type PriceAddon,
   type PriceTier,
   priceTiersSchema,
 } from '@sc/shared';
@@ -23,6 +24,7 @@ import { BackLink } from './BackLink.tsx';
 import type { CatalogKind } from './CatalogList.tsx';
 
 const commonUnits = ['шт', 'м', 'п.м.', 'м²', 'компл.'];
+const defaultAddonName = 'Оклейка в изоляцию';
 
 // Ступень в форме: строки как ввёл админ; у последней ступени границы нет.
 interface TierValues {
@@ -37,6 +39,9 @@ interface Values {
   price: string;
   tiered: boolean;
   tiers: TierValues[];
+  hasAddon: boolean;
+  addonName: string;
+  addonPrice: string;
   isActive: boolean;
 }
 
@@ -78,9 +83,23 @@ export function CatalogItemEdit({ kind }: { kind: CatalogKind }) {
         price: priceItem ? formatMoneyInput(priceItem.price) : '',
         tiered: Boolean(priceItem?.tiers),
         tiers: priceItem?.tiers ? toTierValues(priceItem.tiers) : [],
+        hasAddon: Boolean(priceItem?.addon),
+        addonName: priceItem?.addon?.name ?? defaultAddonName,
+        addonPrice: priceItem?.addon ? formatMoneyInput(priceItem.addon.price) : '',
         isActive: existing.isActive,
       }
-    : { category: 'conditioning', name: '', unit: 'шт', price: '', tiered: false, tiers: [], isActive: true };
+    : {
+        category: 'conditioning',
+        name: '',
+        unit: 'шт',
+        price: '',
+        tiered: false,
+        tiers: [],
+        hasAddon: false,
+        addonName: defaultAddonName,
+        addonPrice: '',
+        isActive: true,
+      };
 
   // key сбрасывает состояние формы при переходе к другой позиции.
   return <CatalogItemForm key={idParam} kind={kind} id={id} initial={initial} />;
@@ -123,16 +142,23 @@ function CatalogItemForm({ kind, id, initial }: { kind: CatalogKind; id: number 
     if (!values.name.trim() || !values.unit.trim()) return fail('Заполните название и единицу измерения');
     const base = { category: values.category, name: values.name.trim(), unit: values.unit.trim(), isActive: values.isActive };
 
-    let pricing: { price: number; tiers: PriceTier[] | null } | undefined;
+    let pricing: { price: number; tiers: PriceTier[] | null; addon: PriceAddon | null } | undefined;
     if (kind === 'works') {
+      let addon: PriceAddon | null = null;
+      if (values.hasAddon) {
+        const addonPrice = parseMoneyInput(values.addonPrice);
+        if (!values.addonName.trim()) return fail('Укажите название доплаты');
+        if (addonPrice === undefined) return fail('Доплата — число в лари, например 1');
+        addon = { name: values.addonName.trim(), price: addonPrice };
+      }
       if (values.tiered) {
         const tiers = parseTiers(values.tiers);
         if (typeof tiers === 'string') return fail(tiers);
-        pricing = { price: tiers[0]!.price, tiers };
+        pricing = { price: tiers[0]!.price, tiers, addon };
       } else {
         const price = parseMoneyInput(values.price);
         if (price === undefined) return fail('Цена — число в лари, например 25 или 25,50');
-        pricing = { price, tiers: null };
+        pricing = { price, tiers: null, addon };
       }
     }
 
@@ -182,20 +208,27 @@ function CatalogItemForm({ kind, id, initial }: { kind: CatalogKind; id: number 
           <span className={styles.hint}>Название</span>
           <input className={styles.input} value={values.name} onChange={(e) => set('name', e.target.value)} />
         </label>
-        <label className={styles.field}>
+        <div className={styles.field}>
           <span className={styles.hint}>Единица измерения</span>
+          <div className={styles.chips}>
+            {commonUnits.map((u) => (
+              <button
+                key={u}
+                type="button"
+                className={`${styles.chip} ${values.unit === u ? styles.chipActive : ''}`}
+                onClick={() => set('unit', u)}
+              >
+                {u}
+              </button>
+            ))}
+          </div>
           <input
             className={styles.input}
-            list="units"
-            value={values.unit}
+            placeholder="или своя единица"
+            value={commonUnits.includes(values.unit) ? '' : values.unit}
             onChange={(e) => set('unit', e.target.value)}
           />
-          <datalist id="units">
-            {commonUnits.map((u) => (
-              <option key={u} value={u} />
-            ))}
-          </datalist>
-        </label>
+        </div>
         {kind === 'works' && (
           <label className={styles.checkboxRow}>
             <input type="checkbox" checked={values.tiered} onChange={(e) => setTiered(e.target.checked)} />
@@ -255,6 +288,30 @@ function CatalogItemForm({ kind, id, initial }: { kind: CatalogKind; id: number 
             <button type="button" className={styles.backLink} onClick={addTier}>
               + ступень
             </button>
+          </div>
+        )}
+        {kind === 'works' && (
+          <label className={styles.checkboxRow}>
+            <input type="checkbox" checked={values.hasAddon} onChange={(e) => set('hasAddon', e.target.checked)} />
+            Доплата за часть объёма (например, оклейка в изоляцию)
+          </label>
+        )}
+        {kind === 'works' && values.hasAddon && (
+          <div className={styles.tierRow}>
+            <input
+              className={styles.input}
+              placeholder="Название доплаты"
+              value={values.addonName}
+              onChange={(e) => set('addonName', e.target.value)}
+            />
+            <input
+              className={styles.qtyInput}
+              inputMode="decimal"
+              placeholder="₾"
+              value={values.addonPrice}
+              onChange={(e) => set('addonPrice', e.target.value)}
+            />
+            <span className={styles.unit}>/ {values.unit || 'ед.'}</span>
           </div>
         )}
         <label className={styles.checkboxRow}>

@@ -1,4 +1,12 @@
-import { type Category, categories, categoryLabels, parseQtyInput, type PriceTier } from '@sc/shared';
+import {
+  type Category,
+  categories,
+  categoryLabels,
+  formatMoney,
+  parseQtyInput,
+  type PriceAddon,
+  type PriceTier,
+} from '@sc/shared';
 import { useState } from 'react';
 import { priceHint } from '../../ui/price.ts';
 import styles from '../../ui/ui.module.css';
@@ -10,6 +18,7 @@ interface PickerItem {
   unit: string;
   price?: number;
   tiers?: PriceTier[] | null;
+  addon?: PriceAddon | null;
 }
 
 interface ItemPickerProps {
@@ -18,10 +27,23 @@ interface ItemPickerProps {
   values: Record<number, string>;
   isInvalid: (id: number) => boolean;
   onChange: (id: number, value: string) => void;
+  // Объём с доплатой — только для работ.
+  addonValues?: Record<number, string>;
+  isAddonInvalid?: (id: number) => boolean;
+  onAddonChange?: (id: number, value: string) => void;
 }
 
 // Справочник с полем количества у каждой позиции. Позиции с количеством попадают в отчёт.
-export function ItemPicker({ title, items, values, isInvalid, onChange }: ItemPickerProps) {
+export function ItemPicker({
+  title,
+  items,
+  values,
+  isInvalid,
+  onChange,
+  addonValues,
+  isAddonInvalid,
+  onAddonChange,
+}: ItemPickerProps) {
   const [search, setSearch] = useState('');
   const query = search.trim().toLowerCase();
   const visible = query ? items.filter((i) => i.name.toLowerCase().includes(query)) : items;
@@ -48,27 +70,50 @@ export function ItemPicker({ title, items, values, isInvalid, onChange }: ItemPi
             <h3 className={styles.groupTitle}>{categoryLabels[category]}</h3>
             {group.map((item) => {
               const value = values[item.id] ?? '';
+              const showAddon = Boolean(item.addon && value && onAddonChange);
               return (
-                <label key={item.id} className={`${styles.itemRow} ${value ? styles.itemSelected : ''}`}>
-                  <span className={styles.itemName}>
-                    {item.name}
-                    {item.price !== undefined && (
-                      <span className={styles.hint}>
-                        {priceHint({ price: item.price, unit: item.unit, tiers: item.tiers ?? null }, parseQtyInput(value))}
+                <div key={item.id} className={styles.itemBlock}>
+                  <label className={`${styles.itemRow} ${value ? styles.itemSelected : ''}`}>
+                    <span className={styles.itemName}>
+                      {item.name}
+                      {item.price !== undefined && (
+                        <span className={styles.hint}>
+                          {priceHint({ price: item.price, unit: item.unit, tiers: item.tiers ?? null }, parseQtyInput(value))}
+                        </span>
+                      )}
+                    </span>
+                    <span className={styles.qty}>
+                      <input
+                        className={`${styles.qtyInput} ${isInvalid(item.id) ? styles.invalid : ''}`}
+                        type="text"
+                        inputMode="decimal"
+                        value={value}
+                        onChange={(e) => onChange(item.id, e.target.value)}
+                      />
+                      <span className={styles.unit}>{item.unit}</span>
+                    </span>
+                  </label>
+                  {showAddon && item.addon && (
+                    <label className={`${styles.itemRow} ${styles.addonRow}`}>
+                      <span className={styles.itemName}>
+                        {item.addon.name}
+                        <span className={styles.hint}>
+                          +{formatMoney(item.addon.price)} / {item.unit}, сколько из {value} {item.unit}
+                        </span>
                       </span>
-                    )}
-                  </span>
-                  <span className={styles.qty}>
-                    <input
-                      className={`${styles.qtyInput} ${isInvalid(item.id) ? styles.invalid : ''}`}
-                      type="text"
-                      inputMode="decimal"
-                      value={value}
-                      onChange={(e) => onChange(item.id, e.target.value)}
-                    />
-                    <span className={styles.unit}>{item.unit}</span>
-                  </span>
-                </label>
+                      <span className={styles.qty}>
+                        <input
+                          className={`${styles.qtyInput} ${isAddonInvalid?.(item.id) ? styles.invalid : ''}`}
+                          type="text"
+                          inputMode="decimal"
+                          value={addonValues?.[item.id] ?? ''}
+                          onChange={(e) => onAddonChange?.(item.id, e.target.value)}
+                        />
+                        <span className={styles.unit}>{item.unit}</span>
+                      </span>
+                    </label>
+                  )}
+                </div>
               );
             })}
           </div>

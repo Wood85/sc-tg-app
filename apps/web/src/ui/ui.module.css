@@ -84,8 +84,21 @@ textarea.input {
   border-bottom: 1px solid var(--tg-theme-section-separator-color, rgba(128, 128, 128, 0.15));
 }
 
-.itemRow:last-child {
+.itemBlock {
+  border-bottom: 1px solid var(--tg-theme-section-separator-color, rgba(128, 128, 128, 0.15));
+}
+
+.itemBlock:last-child {
   border-bottom: none;
+}
+
+.itemBlock .itemRow {
+  border-bottom: none;
+}
+
+.addonRow {
+  padding-left: 16px;
+  font-size: 14px;
 }
 
 .itemSelected .itemName {
@@ -112,7 +125,8 @@ textarea.input {
 }
 
 .unit {
-  width: 28px;
+  min-width: 28px;
+  white-space: nowrap;
   font-size: 14px;
   color: var(--tg-theme-hint-color, #999);
 }

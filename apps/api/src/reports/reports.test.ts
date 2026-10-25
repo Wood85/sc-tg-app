@@ -209,6 +209,50 @@ describe('tiered prices and height coefficient', () => {
   });
 });
 
+describe('price addon', () => {
+  async function createDuct() {
+    const [item] = await db
+      .insert(priceItems)
+      .values({
+        category: 'ventilation',
+        name: 'Прокладка воздуховода 110×60',
+        unit: 'м',
+        price: 800,
+        addon: { name: 'Оклейка в изоляцию', price: 100 },
+      })
+      .returning();
+    return item!;
+  }
+
+  it('adds the addon for part of the length and keeps it after the price list changes', async () => {
+    const duct = await createDuct();
+    const { body: report } = await api<ReportDto>(
+      ivan,
+      'POST',
+      '/api/reports',
+      draft({ participantIds: [], materials: [], works: [{ priceItemId: duct.id, qty: 10, addonQty: 6 }] }),
+    );
+    // 10 м × 8 ₾ + 6 м × 1 ₾
+    expect(report.totalAmount).toBe(8_600);
+    expect(report.works[0]).toMatchObject({ addonName: 'Оклейка в изоляцию', addonQty: 6, addonPrice: 100 });
+
+    await api(ivan, 'POST', `/api/reports/${report.id}/send`);
+    expect(sent[0]!.text).toContain('• Прокладка воздуховода 110×60 — 10 м (оклейка в изоляцию — 6 м)');
+
+    await db.update(priceItems).set({ addon: null }).where(eq(priceItems.id, duct.id));
+    const later = await api<ReportDto>(ivan, 'GET', `/api/reports/${report.id}`);
+    expect(later.body.works[0]).toMatchObject({ addonName: 'Оклейка в изоляцию', addonQty: 6, amount: 8_600 });
+  });
+
+  it('rejects an addon larger than the work or on an item without one', async () => {
+    const duct = await createDuct();
+    const tooMuch = await api(ivan, 'POST', '/api/reports', draft({ works: [{ priceItemId: duct.id, qty: 5, addonQty: 6 }] }));
+    expect(tooMuch.status).toBe(400);
+    const noAddon = await api(ivan, 'POST', '/api/reports', draft({ works: [{ priceItemId: catalog.blocks.id, qty: 1, addonQty: 1 }] }));
+    expect(noAddon.status).toBe(400);
+  });
+});
+
 describe('earnings', () => {
   it('sums sent reports by day within the range', async () => {
     const send = async (workDate: string, participantIds: number[]) => {

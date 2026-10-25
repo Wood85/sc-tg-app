@@ -1,6 +1,8 @@
 import { parseQtyInput, type ReportDraftInput } from '@sc/shared';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
+export type QtyKind = 'works' | 'workAddons' | 'materials';
+
 export interface ReportFormState {
   address: string;
   location: string;
@@ -8,6 +10,8 @@ export interface ReportFormState {
   participantIds: number[];
   // Количество храним строкой, как ввёл пользователь («0,»), и разбираем при отправке.
   works: Record<number, string>;
+  // Объём с доплатой (например, метры в изоляции) для работ, у которых она есть.
+  workAddons: Record<number, string>;
   materials: Record<number, string>;
   comment: string;
   atHeight: boolean;
@@ -27,6 +31,7 @@ export function emptyForm(): ReportFormState {
     workDate: today(),
     participantIds: [],
     works: {},
+    workAddons: {},
     materials: {},
     comment: '',
     atHeight: false,
@@ -53,10 +58,15 @@ const reportFormSlice = createSlice({
         ? state.participantIds.filter((p) => p !== id)
         : [...state.participantIds, id];
     },
-    qtyChanged(state, action: PayloadAction<{ kind: 'works' | 'materials'; id: number; value: string }>) {
+    qtyChanged(state, action: PayloadAction<{ kind: QtyKind; id: number; value: string }>) {
       const { kind, id, value } = action.payload;
-      if (value.trim() === '') delete state[kind][id];
-      else state[kind][id] = value;
+      if (value.trim() === '') {
+        delete state[kind][id];
+        // Без объёма работы доплата теряет смысл.
+        if (kind === 'works') delete state.workAddons[id];
+      } else {
+        state[kind][id] = value;
+      }
     },
     draftCreated(state, action: PayloadAction<number>) {
       state.draftId = action.payload;
@@ -85,7 +95,16 @@ export function validateForm(form: ReportFormState): FormErrors {
   const materials = toLines(form.materials);
   for (const line of works) if (line.qty === undefined) errors.invalidQtyIds.add(`works:${line.id}`);
   for (const line of materials) if (line.qty === undefined) errors.invalidQtyIds.add(`materials:${line.id}`);
-  if (errors.invalidQtyIds.size > 0) errors.lines = 'Исправьте количество: число больше нуля, до двух знаков после запятой';
+  let addonTooBig = false;
+  for (const line of toLines(form.workAddons)) {
+    const workQty = parseQtyInput(form.works[line.id] ?? '');
+    if (line.qty === undefined || (workQty !== undefined && line.qty > workQty)) {
+      errors.invalidQtyIds.add(`workAddons:${line.id}`);
+      if (line.qty !== undefined) addonTooBig = true;
+    }
+  }
+  if (addonTooBig) errors.lines = 'Доплата не может быть больше объёма самой работы';
+  else if (errors.invalidQtyIds.size > 0) errors.lines = 'Исправьте количество: число больше нуля, до двух знаков после запятой';
   else if (works.length === 0 && materials.length === 0) errors.lines = 'Добавьте хотя бы одну работу или материал';
   return errors;
 }
@@ -101,7 +120,11 @@ export function toDraftInput(form: ReportFormState): ReportDraftInput {
     location: form.location.trim(),
     workDate: form.workDate,
     participantIds: form.participantIds,
-    works: toLines(form.works).map((l) => ({ priceItemId: l.id, qty: l.qty! })),
+    works: toLines(form.works).map((l) => ({
+      priceItemId: l.id,
+      qty: l.qty!,
+      addonQty: parseQtyInput(form.workAddons[l.id] ?? ''),
+    })),
     materials: toLines(form.materials).map((l) => ({ materialId: l.id, qty: l.qty! })),
     comment: form.comment.trim(),
     atHeight: form.atHeight,

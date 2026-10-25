@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { formatMoneyInput, lineAmount, parseMoneyInput, reportTotal, splitEqually, tierPrice } from './money.ts';
+import {
+  formatMoneyInput,
+  lineAmount,
+  parseMoneyInput,
+  reportTotal,
+  splitEqually,
+  tierPrice,
+  workAmount,
+} from './money.ts';
 
 describe('lineAmount', () => {
   it('multiplies fractional quantities without float drift', () => {
@@ -64,5 +72,13 @@ describe('reportTotal', () => {
     expect(reportTotal([1000, 2333], false)).toBe(3333);
     expect(reportTotal([1000, 2333], true)).toBe(4000);
     expect(reportTotal([1], true)).toBe(1);
+  });
+});
+
+describe('workAmount', () => {
+  it('adds the addon for its own quantity', () => {
+    // 10 м воздуховода по 8 ₾, из них 6 м в изоляции по +1 ₾.
+    expect(workAmount(10, 800, 6, 100)).toBe(8_600);
+    expect(workAmount(10, 800)).toBe(8_000);
   });
 });

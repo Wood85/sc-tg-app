@@ -25,6 +25,7 @@ const priceItemColumns = {
   unit: priceItems.unit,
   price: priceItems.price,
   tiers: priceItems.tiers,
+  addon: priceItems.addon,
   isActive: priceItems.isActive,
 };
 const materialColumns = {

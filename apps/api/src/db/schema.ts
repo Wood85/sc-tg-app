@@ -1,4 +1,4 @@
-import { categories, type PriceTier, reportStatuses, roles } from '@sc/shared';
+import { categories, type PriceAddon, type PriceTier, reportStatuses, roles } from '@sc/shared';
 import { sql } from 'drizzle-orm';
 import {
   bigint,
@@ -45,6 +45,8 @@ export const priceItems = pgTable(
     price: integer().notNull(),
     // Ступенчатая цена по общему количеству в отчёте; null — обычная цена.
     tiers: jsonb().$type<PriceTier[]>(),
+    // Доплата за часть объёма (оклейка в изоляцию и т. п.); null — нет доплаты.
+    addon: jsonb().$type<PriceAddon>(),
     isActive: boolean().notNull().default(true),
     sortOrder: integer().notNull().default(0),
   },
@@ -111,6 +113,10 @@ export const reportWorks = pgTable('report_works', {
   qty: qty(),
   // Цена на момент отчёта: изменения прайса не пересчитывают старые отчёты.
   unitPriceSnapshot: integer().notNull(),
+  // Доплата фиксируется так же, как цена: правка прайса не меняет отправленные отчёты.
+  addonNameSnapshot: text(),
+  addonQty: numeric({ precision: 10, scale: 2, mode: 'number' }),
+  addonPriceSnapshot: integer(),
   amount: integer().notNull(),
 });
 

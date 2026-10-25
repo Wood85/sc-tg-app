@@ -8,6 +8,7 @@ const FORM_STORAGE_KEY = 'reportForm';
 function loadForm(): ReportFormState | undefined {
   try {
     const raw = localStorage.getItem(FORM_STORAGE_KEY);
+    // Слияние с пустой формой — на случай, если в сохранённой версии нет новых полей.
     return raw ? { ...emptyForm(), ...(JSON.parse(raw) as Partial<ReportFormState>) } : undefined;
   } catch {
     return undefined;

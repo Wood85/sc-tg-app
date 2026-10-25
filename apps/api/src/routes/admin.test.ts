@@ -111,6 +111,16 @@ describe('tiered price items', () => {
   });
 });
 
+describe('price addon in admin', () => {
+  it('saves and clears the addon', async () => {
+    const addon = { name: 'Оклейка в изоляцию', price: 100 };
+    const created = await api<AdminPriceItemDto>(admin.telegramId, 'POST', '/api/admin/price-items', { ...work, addon });
+    expect(created.body.addon).toEqual(addon);
+    const cleared = await api<AdminPriceItemDto>(admin.telegramId, 'PUT', `/api/admin/price-items/${created.body.id}`, work);
+    expect(cleared.body.addon).toBeNull();
+  });
+});
+
 describe('materials', () => {
   it('creates and edits materials', async () => {
     const material = { category: 'ventilation', name: 'Труба ⌀110', unit: 'м' };
