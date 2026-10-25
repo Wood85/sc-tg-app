@@ -3,3 +3,7 @@ dist/
 .env
 *.log
 .DS_Store
+
+# Настоящие прайсы не храним в репозитории (он публичный); примеры — можно.
+apps/api/seed/*.csv
+!apps/api/seed/*.example.csv
