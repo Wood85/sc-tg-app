@@ -1,7 +1,3 @@
-import { useState } from 'react';
-import { hapticSelection } from '../telegram.ts';
-import { Chevron } from './Chevron.tsx';
-import { Collapse } from './Collapse.tsx';
 import {
   addDays,
   addMonths,
@@ -13,7 +9,11 @@ import {
   monthTitle,
   today,
   weekdayNames,
-} from './dates.ts';
+} from '@sc/shared';
+import { useState } from 'react';
+import { hapticSelection } from '../telegram.ts';
+import { Chevron } from './Chevron.tsx';
+import { Collapse } from './Collapse.tsx';
 import styles from './ui.module.css';
 
 interface DatePickerProps {

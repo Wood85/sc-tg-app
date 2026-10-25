@@ -1,4 +1,4 @@
-import { categories, type PriceTier, reportStatuses, roles } from '@sc/shared';
+import { categories, type PayrollDay, type PriceTier, reportStatuses, roles } from '@sc/shared';
 import { sql } from 'drizzle-orm';
 import {
   bigint,
@@ -162,6 +162,24 @@ export const dailyWages = pgTable(
     createdAt: createdAt(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.workDate] })],
+);
+
+// Недельный отчёт на выплату. Один на человека за неделю; повторная отправка его обновляет.
+// days — снимок на момент отправки: админ видит ровно то, что ему прислали.
+export const payrollStatements = pgTable(
+  'payroll_statements',
+  {
+    id: id(),
+    userId: integer()
+      .notNull()
+      .references(() => users.id),
+    weekStart: date({ mode: 'string' }).notNull(),
+    total: integer().notNull(),
+    days: jsonb().$type<PayrollDay[]>().notNull(),
+    sentAt: timestamp({ withTimezone: true }).notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex().on(t.userId, t.weekStart)],
 );
 
 export type User = typeof users.$inferSelect;

@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router';
 import { errorMessage, useGetAdminUsersQuery, useSaveUserMutation } from '../../api/baseApi.ts';
 import { haptic, isInsideTelegram, useMainButton } from '../../telegram.ts';
 import styles from '../../ui/ui.module.css';
-import { BackLink } from './BackLink.tsx';
+import { BackLink } from '../../ui/BackLink.tsx';
 
 interface Values {
   telegramId: string;

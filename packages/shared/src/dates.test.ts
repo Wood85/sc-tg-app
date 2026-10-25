@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { addDays, addMonths, dateLabel, monthGrid, monthTitle } from './dates.ts';
+import {
+  addDays,
+  addMonths,
+  dateLabel,
+  monthGrid,
+  monthRange,
+  monthTitle,
+  rangeLabel,
+  weekdayLabel,
+  weekRange,
+} from './dates.ts';
 
 describe('monthGrid', () => {
   it('starts weeks on Monday and pads to full weeks', () => {
@@ -25,6 +35,26 @@ describe('date arithmetic', () => {
     expect(addDays('2026-12-31', 1)).toBe('2027-01-01');
     expect(addMonths({ year: 2026, month: 0 }, -1)).toEqual({ year: 2025, month: 11 });
   });
+
+  it('gives the first and last day of a month', () => {
+    expect(monthRange({ year: 2026, month: 9 })).toEqual({ from: '2026-10-01', to: '2026-10-31' });
+    expect(monthRange({ year: 2024, month: 1 })).toEqual({ from: '2024-02-01', to: '2024-02-29' });
+  });
+});
+
+describe('weeks', () => {
+  it('runs Monday to Sunday', () => {
+    // 26 октября 2026 — понедельник, 25-е — воскресенье.
+    expect(weekRange('2026-10-26')).toEqual({ from: '2026-10-26', to: '2026-11-01' });
+    expect(weekRange('2026-10-25')).toEqual({ from: '2026-10-19', to: '2026-10-25' });
+    expect(weekRange('2026-10-28', 1)).toEqual({ from: '2026-10-19', to: '2026-10-25' });
+    expect(weekRange('2026-10-01', 1)).toEqual({ from: '2026-09-21', to: '2026-09-27' });
+  });
+
+  it('labels ranges within and across months', () => {
+    expect(rangeLabel({ from: '2026-10-19', to: '2026-10-25' })).toBe('19–25 октября');
+    expect(rangeLabel({ from: '2026-09-28', to: '2026-10-04' })).toBe('28 сентября – 4 октября');
+  });
 });
 
 describe('labels', () => {
@@ -35,6 +65,10 @@ describe('labels', () => {
     expect(dateLabel('2026-10-24', today)).toBe('Вчера, 24 октября');
     expect(dateLabel('2026-10-23', today)).toBe('Пт, 23 октября');
     expect(dateLabel('2025-12-31', today)).toBe('Ср, 31 декабря 2025');
+  });
+
+  it('has an absolute weekday label for messages', () => {
+    expect(weekdayLabel('2026-10-25')).toBe('Вс, 25 октября');
   });
 
   it('titles months in the nominative case', () => {

@@ -3,6 +3,8 @@ import {
   type AdminPriceItemDto,
   type AdminUserDto,
   materialInputSchema,
+  type PayrollStatementDto,
+  type PayrollUserDto,
   priceItemInputSchema,
   userInputSchema,
   type WageRates,
@@ -16,6 +18,7 @@ import { bot } from '../bot.ts';
 import { db } from '../db/index.ts';
 import { materials, priceItems, users } from '../db/schema.ts';
 import { HttpError, isForeignKeyViolation, isUniqueViolation, parseOrThrow } from '../errors.ts';
+import { listPayrollUsers, listStatements } from '../payroll/service.ts';
 import { getWageRates, setWageRates } from '../wages.ts';
 
 const paramsSchema = z.object({ id: z.coerce.number().int().positive() });
@@ -159,6 +162,14 @@ export async function adminRoutes(app: FastifyInstance) {
   app.put('/wage-rates', async (req): Promise<WageRates> => {
     await setWageRates(parseOrThrow(wageRatesSchema, req.body));
     return getWageRates();
+  });
+
+  app.get('/payroll', async (): Promise<PayrollUserDto[]> => listPayrollUsers());
+
+  app.get('/payroll/:id', async (req): Promise<PayrollStatementDto[]> => {
+    const { id } = parseOrThrow(paramsSchema, req.params);
+    const { limit } = parseOrThrow(z.object({ limit: z.coerce.number().int().min(1).max(52).default(5) }), req.query);
+    return listStatements(id, limit);
   });
 
   app.get('/users', async (): Promise<AdminUserDto[]> =>

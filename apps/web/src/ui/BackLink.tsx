@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router';
-import { isInsideTelegram, useBackButton } from '../../telegram.ts';
-import styles from '../../ui/ui.module.css';
+import { isInsideTelegram, useBackButton } from '../telegram.ts';
+import styles from './ui.module.css';
 
 // Внутри Telegram — нативная кнопка «Назад» в шапке, в браузере — ссылка.
 export function BackLink({ to }: { to: string }) {

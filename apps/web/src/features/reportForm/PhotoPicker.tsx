@@ -1,8 +1,9 @@
 import { MAX_REPORT_PHOTOS } from '@sc/shared';
 import { useEffect, useState } from 'react';
-import { fetchPhotoUrl, useDeletePhotoMutation, useUploadPhotoMutation } from '../../api/baseApi.ts';
+import { useDeletePhotoMutation, useUploadPhotoMutation } from '../../api/baseApi.ts';
 import { useAppDispatch, useAppSelector } from '../../app/hooks.ts';
 import { compressImage } from '../../ui/compressImage.ts';
+import { PhotoThumb, rememberPhotoPreview } from '../../ui/PhotoThumb.tsx';
 import styles from '../../ui/ui.module.css';
 import { photoAdded, photoRemoved } from './reportFormSlice.ts';
 
@@ -13,8 +14,6 @@ interface Upload {
   status: 'uploading' | 'error';
 }
 
-// Превью уже загруженных фото: из выбранного файла или скачанные с сервера после перезапуска.
-const previewCache = new Map<number, string>();
 let nextUploadKey = 0;
 
 // Фото загружаются сразу после выбора, по одному, — на объекте связь бывает плохой.
@@ -34,7 +33,7 @@ export function PhotoPicker({ onBusyChange }: { onBusyChange: (busy: boolean) =>
     setUploads((list) => list.map((u) => (u.key === upload.key ? { ...u, status: 'uploading' } : u)));
     try {
       const { id } = await uploadPhoto(await compressImage(upload.file)).unwrap();
-      previewCache.set(id, upload.previewUrl);
+      rememberPhotoPreview(id, upload.previewUrl);
       dispatch(photoAdded(id));
       setUploads((list) => list.filter((u) => u.key !== upload.key));
     } catch {
@@ -70,7 +69,7 @@ export function PhotoPicker({ onBusyChange }: { onBusyChange: (busy: boolean) =>
       <div className={styles.photoGrid}>
         {photoIds.map((id) => (
           <div key={id} className={styles.photoTile}>
-            <UploadedPhoto id={id} />
+            <PhotoThumb id={id} />
             <button type="button" className={styles.photoRemove} onClick={() => remove(id)} aria-label="Удалить фото">
               ×
             </button>
@@ -113,22 +112,3 @@ export function PhotoPicker({ onBusyChange }: { onBusyChange: (busy: boolean) =>
   );
 }
 
-function UploadedPhoto({ id }: { id: number }) {
-  const [url, setUrl] = useState(previewCache.get(id));
-
-  useEffect(() => {
-    if (url) return;
-    let cancelled = false;
-    fetchPhotoUrl(id)
-      .then((fetched) => {
-        previewCache.set(id, fetched);
-        if (!cancelled) setUrl(fetched);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [id, url]);
-
-  return url ? <img src={url} alt="" className={styles.photoImage} /> : <span className={styles.photoOverlay}>…</span>;
-}

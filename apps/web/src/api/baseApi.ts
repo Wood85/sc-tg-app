@@ -5,6 +5,9 @@ import type {
   CatalogDto,
   EarningsDto,
   MaterialInput,
+  PayrollSendResultDto,
+  PayrollStatementDto,
+  PayrollUserDto,
   PhotoDto,
   PriceItemInput,
   UserInput,
@@ -31,7 +34,7 @@ export const baseApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ['Report', 'Catalog', 'Users'],
+  tagTypes: ['Report', 'Catalog', 'Users', 'Payroll'],
   endpoints: (build) => ({
     getMe: build.query<MeDto, void>({ query: () => '/me' }),
     getCatalog: build.query<CatalogDto, void>({ query: () => '/catalog', providesTags: ['Catalog'] }),
@@ -41,9 +44,25 @@ export const baseApi = createApi({
       query: ({ from, to }) => `/me/earnings?from=${from}&to=${to}`,
       providesTags: ['Report'],
     }),
+    getMyPayroll: build.query<PayrollStatementDto[], void>({
+      query: () => '/payroll',
+      providesTags: ['Payroll'],
+    }),
+    sendPayroll: build.mutation<PayrollSendResultDto, string>({
+      query: (weekStart) => ({ url: '/payroll', method: 'POST', body: { weekStart } }),
+      invalidatesTags: ['Payroll'],
+    }),
     getReports: build.query<ReportListItemDto[], void>({
       query: () => '/reports',
       providesTags: ['Report'],
+    }),
+    getReport: build.query<ReportDto, number>({
+      query: (id) => `/reports/${id}`,
+      providesTags: ['Report'],
+    }),
+    deleteReport: build.mutation<void, number>({
+      query: (id) => ({ url: `/reports/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['Report'],
     }),
     createReport: build.mutation<ReportDto, ReportDraftInput>({
       query: (body) => ({ url: '/reports', method: 'POST', body }),
@@ -107,6 +126,14 @@ export const baseApi = createApi({
       query: (body) => ({ url: '/admin/wage-rates', method: 'PUT', body }),
       invalidatesTags: ['Catalog'],
     }),
+    getPayrollUsers: build.query<PayrollUserDto[], void>({
+      query: () => '/admin/payroll',
+      providesTags: ['Payroll'],
+    }),
+    getPayrollStatements: build.query<PayrollStatementDto[], { userId: number; limit: number }>({
+      query: ({ userId, limit }) => `/admin/payroll/${userId}?limit=${limit}`,
+      providesTags: ['Payroll'],
+    }),
     getAdminUsers: build.query<AdminUserDto[], void>({
       query: () => '/admin/users',
       providesTags: ['Users'],
@@ -124,7 +151,11 @@ export const {
   useGetCatalogQuery,
   useGetUsersQuery,
   useGetReportsQuery,
+  useGetReportQuery,
+  useDeleteReportMutation,
   useGetEarningsQuery,
+  useGetMyPayrollQuery,
+  useSendPayrollMutation,
   useCreateReportMutation,
   useUpdateReportMutation,
   useSendReportMutation,
@@ -138,6 +169,8 @@ export const {
   useDeleteMaterialMutation,
   useGetWageRatesQuery,
   useSaveWageRatesMutation,
+  useGetPayrollUsersQuery,
+  useGetPayrollStatementsQuery,
   useGetAdminUsersQuery,
   useSaveUserMutation,
 } = baseApi;

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { formatGroupMessage, splitMessage } from './format.ts';
 
 describe('formatGroupMessage', () => {
-  it('groups works and materials by category without amounts', () => {
+  it('puts the crew on top and groups works and materials by category, without icons or amounts', () => {
     const text = formatGroupMessage({
       address: 'Багратиони 196И',
       location: '10 этаж',
@@ -19,21 +19,22 @@ describe('formatGroupMessage', () => {
 
     expect(text).toBe(
       [
-        '📍 <b>Багратиони 196И</b> · 10 этаж',
-        '📅 24.10.2026 · 👷 Иван Петров, Сергей Ким',
-        '🪜 Работы на высоте выше 4,5 м',
+        '<b>Иван Петров, Сергей Ким</b>',
+        'Багратиони 196И · 10 этаж',
+        '24.10.2026',
+        'Работы на высоте выше 4,5 м',
         '',
-        '🔧 <b>Работы</b>',
-        '❄️ Кондиционирование',
+        '<b>Работы</b>',
+        'Кондиционирование',
         '• Монтаж блоков — 2 шт',
-        '🌀 Вентиляция',
+        'Вентиляция',
         '• Отверстие под приточку ⌀100 — 2 шт',
         '',
-        '📦 <b>Материалы</b>',
-        '🌀 Вентиляция',
+        '<b>Материалы</b>',
+        'Вентиляция',
         '• Труба ⌀110 — 0,3 м',
         '',
-        '💬 Приточка без монтажа',
+        'Комментарий: Приточка без монтажа',
       ].join('\n'),
     );
   });
@@ -49,7 +50,7 @@ describe('formatGroupMessage', () => {
       comment: '',
       atHeight: false,
     });
-    expect(text).toBe('📍 <b>Дом &lt;5&gt;</b>\n📅 02.01.2026 · 👷 A&amp;B');
+    expect(text).toBe('<b>A&amp;B</b>\nДом &lt;5&gt;\n02.01.2026');
   });
 });
 
