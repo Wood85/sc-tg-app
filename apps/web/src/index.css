@@ -1,7 +1,7 @@
 /* Цвета берём из темы Telegram, чтобы приложение выглядело родным в светлой и тёмной теме. */
 body {
   margin: 0;
-  padding: 16px;
+  padding: 12px 12px 16px;
   font-family: system-ui, -apple-system, sans-serif;
   background: var(--tg-theme-bg-color, #fff);
   color: var(--tg-theme-text-color, #000);

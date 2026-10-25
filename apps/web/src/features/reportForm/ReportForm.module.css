@@ -1,0 +1,173 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 24px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--tg-theme-section-bg-color, var(--tg-theme-secondary-bg-color, #f4f4f5));
+}
+
+.section p {
+  margin: 0;
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--tg-theme-section-header-text-color, var(--tg-theme-text-color, #000));
+}
+
+.groupTitle {
+  margin: 8px 0 4px;
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: uppercase;
+  color: var(--tg-theme-hint-color, #999);
+}
+
+.badge {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 20px;
+  text-align: center;
+  background: var(--tg-theme-button-color, #2481cc);
+  color: var(--tg-theme-button-text-color, #fff);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* 16px — иначе iOS увеличивает страницу при фокусе. */
+.input,
+.qtyInput {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--tg-theme-section-separator-color, rgba(128, 128, 128, 0.3));
+  border-radius: 8px;
+  font: inherit;
+  font-size: 16px;
+  background: var(--tg-theme-bg-color, #fff);
+  color: var(--tg-theme-text-color, #000);
+}
+
+textarea.input {
+  resize: vertical;
+}
+
+.invalid {
+  border-color: var(--tg-theme-destructive-text-color, #e53935);
+}
+
+.itemRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--tg-theme-section-separator-color, rgba(128, 128, 128, 0.15));
+}
+
+.itemRow:last-child {
+  border-bottom: none;
+}
+
+.itemSelected .itemName {
+  font-weight: 600;
+}
+
+.itemName {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.qty {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.qtyInput {
+  width: 72px;
+  padding: 8px;
+  text-align: right;
+}
+
+.unit {
+  width: 28px;
+  font-size: 14px;
+  color: var(--tg-theme-hint-color, #999);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  padding: 8px 12px;
+  border: 1px solid var(--tg-theme-button-color, #2481cc);
+  border-radius: 16px;
+  font: inherit;
+  font-size: 14px;
+  background: transparent;
+  color: var(--tg-theme-button-color, #2481cc);
+}
+
+.chipActive {
+  background: var(--tg-theme-button-color, #2481cc);
+  color: var(--tg-theme-button-text-color, #fff);
+}
+
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 4px;
+}
+
+.hint {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--tg-theme-hint-color, #999);
+}
+
+.error {
+  margin: 0;
+  font-size: 14px;
+  color: var(--tg-theme-destructive-text-color, #e53935);
+}
+
+.submit {
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 600;
+  background: var(--tg-theme-button-color, #2481cc);
+  color: var(--tg-theme-button-text-color, #fff);
+}
+
+.submit:disabled {
+  opacity: 0.6;
+}
