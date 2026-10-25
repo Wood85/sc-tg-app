@@ -40,6 +40,11 @@ export function compareMonths(a: YearMonth, b: YearMonth): number {
   return a.year - b.year || a.month - b.month;
 }
 
+// Первый и последний день месяца — для запросов «за месяц».
+export function monthRange({ year, month }: YearMonth): { from: string; to: string } {
+  return { from: toIsoDate(new Date(year, month, 1)), to: toIsoDate(new Date(year, month + 1, 0)) };
+}
+
 // Сетка месяца по неделям с понедельника: ISO-даты дней, null — пустые клетки до 1-го и после последнего числа.
 export function monthGrid({ year, month }: YearMonth): (string | null)[] {
   const offset = (new Date(year, month, 1).getDay() + 6) % 7;

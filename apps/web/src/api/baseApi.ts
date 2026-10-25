@@ -45,6 +45,14 @@ export const baseApi = createApi({
       query: () => '/reports',
       providesTags: ['Report'],
     }),
+    getReport: build.query<ReportDto, number>({
+      query: (id) => `/reports/${id}`,
+      providesTags: ['Report'],
+    }),
+    deleteReport: build.mutation<void, number>({
+      query: (id) => ({ url: `/reports/${id}`, method: 'DELETE' }),
+      invalidatesTags: ['Report'],
+    }),
     createReport: build.mutation<ReportDto, ReportDraftInput>({
       query: (body) => ({ url: '/reports', method: 'POST', body }),
       invalidatesTags: ['Report'],
@@ -124,6 +132,8 @@ export const {
   useGetCatalogQuery,
   useGetUsersQuery,
   useGetReportsQuery,
+  useGetReportQuery,
+  useDeleteReportMutation,
   useGetEarningsQuery,
   useCreateReportMutation,
   useUpdateReportMutation,

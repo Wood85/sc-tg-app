@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addDays, addMonths, dateLabel, monthGrid, monthTitle } from './dates.ts';
+import { addDays, addMonths, dateLabel, monthGrid, monthRange, monthTitle } from './dates.ts';
 
 describe('monthGrid', () => {
   it('starts weeks on Monday and pads to full weeks', () => {
@@ -24,6 +24,11 @@ describe('date arithmetic', () => {
     expect(addDays('2026-03-01', -1)).toBe('2026-02-28');
     expect(addDays('2026-12-31', 1)).toBe('2027-01-01');
     expect(addMonths({ year: 2026, month: 0 }, -1)).toEqual({ year: 2025, month: 11 });
+  });
+
+  it('gives the first and last day of a month', () => {
+    expect(monthRange({ year: 2026, month: 9 })).toEqual({ from: '2026-10-01', to: '2026-10-31' });
+    expect(monthRange({ year: 2024, month: 1 })).toEqual({ from: '2024-02-01', to: '2024-02-29' });
   });
 });
 

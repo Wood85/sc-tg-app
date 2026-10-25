@@ -21,7 +21,7 @@ import {
 } from '../../api/baseApi.ts';
 import { confirmAction, haptic, isInsideTelegram, useMainButton } from '../../telegram.ts';
 import styles from '../../ui/ui.module.css';
-import { BackLink } from './BackLink.tsx';
+import { BackLink } from '../../ui/BackLink.tsx';
 import type { CatalogKind } from './CatalogList.tsx';
 
 const commonUnits = ['шт', 'м', 'п.м.', 'м²', 'компл.'];

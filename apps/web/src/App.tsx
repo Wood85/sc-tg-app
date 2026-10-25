@@ -7,7 +7,10 @@ import { CatalogList } from './features/admin/CatalogList.tsx';
 import { UserEdit } from './features/admin/UserEdit.tsx';
 import { UserList } from './features/admin/UserList.tsx';
 import { WageRatesEdit } from './features/admin/WageRatesEdit.tsx';
+import { EarningsPage } from './features/earnings/EarningsPage.tsx';
 import { ReportForm } from './features/reportForm/ReportForm.tsx';
+import { ReportDetails } from './features/reports/ReportDetails.tsx';
+import { ReportsList } from './features/reports/ReportsList.tsx';
 import styles from './ui/ui.module.css';
 
 export function App() {
@@ -21,9 +24,12 @@ export function App() {
 
   return (
     <>
-      {me.role === 'admin' && <MainNav />}
+      <MainNav isAdmin={me.role === 'admin'} />
       <Routes>
         <Route path="/" element={<ReportForm me={me} />} />
+        <Route path="/reports" element={<ReportsList />} />
+        <Route path="/reports/:id" element={<ReportDetails me={me} />} />
+        <Route path="/earnings" element={<EarningsPage />} />
         {me.role === 'admin' && <Route path="/admin/*" element={<AdminRoutes me={me} />} />}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
@@ -33,16 +39,24 @@ export function App() {
 
 const tabClass = ({ isActive }: { isActive: boolean }) => `${styles.tab} ${isActive ? styles.tabActive : ''}`;
 
-// Монтажнику переключатель не нужен — у него только форма отчёта.
-function MainNav() {
+// Короткие подписи — на экране телефона помещаются четыре вкладки.
+function MainNav({ isAdmin }: { isAdmin: boolean }) {
   return (
     <nav className={styles.tabs}>
       <NavLink to="/" end className={tabClass}>
-        Отчёт
+        Новый
       </NavLink>
-      <NavLink to="/admin" className={tabClass}>
-        Админка
+      <NavLink to="/reports" className={tabClass}>
+        Отчёты
       </NavLink>
+      <NavLink to="/earnings" className={tabClass}>
+        Заработок
+      </NavLink>
+      {isAdmin && (
+        <NavLink to="/admin" className={tabClass}>
+          Админ
+        </NavLink>
+      )}
     </nav>
   );
 }
