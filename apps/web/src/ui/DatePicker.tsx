@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { hapticSelection } from '../telegram.ts';
+import { Chevron } from './Chevron.tsx';
 import { Collapse } from './Collapse.tsx';
 import {
   addDays,
@@ -62,7 +63,9 @@ export function DatePicker({ value, onChange, max }: DatePickerProps) {
     <div className={styles.datePicker}>
       <button type="button" className={`${styles.input} ${styles.dateField}`} onClick={toggle} aria-expanded={open}>
         <span>{dateLabel(value, todayIso)}</span>
-        <span className={`${styles.hint} ${styles.dateArrow} ${open ? styles.dateArrowOpen : ''}`}>▼</span>
+        <span className={styles.toggleIcon}>
+          <Chevron direction={open ? 'up' : 'down'} />
+        </span>
       </button>
 
       <Collapse open={open}>
@@ -87,7 +90,7 @@ export function DatePicker({ value, onChange, max }: DatePickerProps) {
               onClick={() => goToMonth(-1)}
               aria-label="Предыдущий месяц"
             >
-              ‹
+              <Chevron direction="left" />
             </button>
             <span>{monthTitle(view)}</span>
             <button
@@ -97,7 +100,7 @@ export function DatePicker({ value, onChange, max }: DatePickerProps) {
               disabled={!canGoForward}
               aria-label="Следующий месяц"
             >
-              ›
+              <Chevron direction="right" />
             </button>
           </div>
 

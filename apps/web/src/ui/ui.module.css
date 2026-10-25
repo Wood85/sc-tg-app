@@ -367,12 +367,25 @@ textarea.input {
   flex-direction: column;
 }
 
-.dateArrow {
-  transition: transform 200ms ease;
+.chevron {
+  display: block;
+  flex-shrink: 0;
+  transition: transform 220ms ease;
 }
 
-.dateArrowOpen {
-  transform: rotate(180deg);
+/* Круглая подложка под шевроном у раскрывающихся блоков. */
+.toggleIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  color: var(--tg-theme-hint-color, #8a8a8e);
+  /* Подложка — оттенок цвета иконки, поэтому видна и на светлом, и на тёмном фоне. */
+  background: rgba(128, 128, 128, 0.14);
+  background: color-mix(in srgb, currentColor 16%, transparent);
 }
 
 /* Плавное раскрытие на любую высоту: строка грида анимируется от 0fr до 1fr. */
@@ -420,7 +433,7 @@ textarea.input {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dateArrow,
+  .chevron,
   .collapse,
   .slideFromLeft,
   .slideFromRight {
@@ -453,12 +466,14 @@ textarea.input {
 }
 
 .calendarNav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 36px;
   height: 36px;
+  padding: 0;
   border: none;
   border-radius: 50%;
-  font-size: 22px;
-  line-height: 1;
   background: var(--tg-theme-secondary-bg-color, #f4f4f5);
   color: var(--tg-theme-text-color, #000);
 }

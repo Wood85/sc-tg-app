@@ -1,5 +1,6 @@
 import { type Category, categories, categoryLabels, parseQtyInput, type PriceTier } from '@sc/shared';
 import { useEffect, useState } from 'react';
+import { Chevron } from '../../ui/Chevron.tsx';
 import { Collapse } from '../../ui/Collapse.tsx';
 import { priceHint } from '../../ui/price.ts';
 import styles from '../../ui/ui.module.css';
@@ -46,7 +47,9 @@ export function ItemPicker({ title, items, values, isInvalid, onChange, submitAt
           {title}
           {selected.length > 0 && <span className={styles.badge}>{selected.length}</span>}
         </span>
-        <span className={`${styles.hint} ${styles.dateArrow} ${open ? styles.dateArrowOpen : ''}`}>▼</span>
+        <span className={styles.toggleIcon}>
+          <Chevron direction={open ? 'up' : 'down'} />
+        </span>
       </button>
       {!open && selected.length > 0 && (
         <ul className={styles.selectedSummary}>
