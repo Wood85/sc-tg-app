@@ -57,6 +57,7 @@ function ReportFormBody({ me, onSent }: { me: MeDto; onSent: (report: ReportDto)
   const [submitting, setSubmitting] = useState(false);
   const [photosBusy, setPhotosBusy] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
+  const [submitAttempt, setSubmitAttempt] = useState(0);
   const [submitError, setSubmitError] = useState<string>();
 
   const errors = validateForm(form);
@@ -79,6 +80,7 @@ function ReportFormBody({ me, onSent }: { me: MeDto; onSent: (report: ReportDto)
   async function submit() {
     setShowErrors(true);
     if (hasErrors(errors)) {
+      setSubmitAttempt((n) => n + 1);
       haptic('error');
       return;
     }
@@ -189,6 +191,7 @@ function ReportFormBody({ me, onSent }: { me: MeDto; onSent: (report: ReportDto)
         values={form.works}
         isInvalid={(id) => visibleErrors.invalidQtyIds.has(`works:${id}`)}
         onChange={(id, value) => dispatch(qtyChanged({ kind: 'works', id, value }))}
+        submitAttempt={submitAttempt}
       />
 
       <ItemPicker
@@ -197,6 +200,7 @@ function ReportFormBody({ me, onSent }: { me: MeDto; onSent: (report: ReportDto)
         values={form.materials}
         isInvalid={(id) => visibleErrors.invalidQtyIds.has(`materials:${id}`)}
         onChange={(id, value) => dispatch(qtyChanged({ kind: 'materials', id, value }))}
+        submitAttempt={submitAttempt}
       />
 
       <PhotoPicker onBusyChange={setPhotosBusy} />

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { hapticSelection } from '../telegram.ts';
+import { Collapse } from './Collapse.tsx';
 import {
   addDays,
   addMonths,
@@ -64,77 +65,74 @@ export function DatePicker({ value, onChange, max }: DatePickerProps) {
         <span className={`${styles.hint} ${styles.dateArrow} ${open ? styles.dateArrowOpen : ''}`}>▼</span>
       </button>
 
-      {/* Календарь всегда в DOM, чтобы раскрываться и сворачиваться плавно; закрытый недоступен с клавиатуры. */}
-      <div className={`${styles.collapse} ${open ? styles.collapseOpen : ''}`} inert={!open}>
-        <div className={styles.collapseInner}>
-          <div className={styles.calendar}>
-            <div className={styles.chips}>
-              {shortcuts.map((s) => (
-                <button
-                  key={s.label}
-                  type="button"
-                  className={`${styles.chip} ${value === s.iso ? styles.chipActive : ''}`}
-                  onClick={() => select(s.iso)}
-                >
-                  {s.label}
-                </button>
-              ))}
-            </div>
-
-            <div className={styles.calendarHeader}>
+      <Collapse open={open}>
+        <div className={styles.calendar}>
+          <div className={styles.chips}>
+            {shortcuts.map((s) => (
               <button
+                key={s.label}
                 type="button"
-                className={styles.calendarNav}
-                onClick={() => goToMonth(-1)}
-                aria-label="Предыдущий месяц"
+                className={`${styles.chip} ${value === s.iso ? styles.chipActive : ''}`}
+                onClick={() => select(s.iso)}
               >
-                ‹
+                {s.label}
               </button>
-              <span>{monthTitle(view)}</span>
-              <button
-                type="button"
-                className={styles.calendarNav}
-                onClick={() => goToMonth(1)}
-                disabled={!canGoForward}
-                aria-label="Следующий месяц"
-              >
-                ›
-              </button>
-            </div>
+            ))}
+          </div>
 
-            <div
-              // Новый key при смене месяца перезапускает анимацию появления.
-              key={`${view.year}-${view.month}`}
-              className={`${styles.calendarGrid} ${direction ? styles[direction === 'back' ? 'slideFromLeft' : 'slideFromRight'] : ''}`}
+          <div className={styles.calendarHeader}>
+            <button
+              type="button"
+              className={styles.calendarNav}
+              onClick={() => goToMonth(-1)}
+              aria-label="Предыдущий месяц"
             >
-              {weekdayNames.map((name) => (
-                <span key={name} className={styles.calendarWeekday}>
-                  {name}
-                </span>
-              ))}
-              {monthGrid(view).map((iso, i) =>
-                iso ? (
-                  <button
-                    key={iso}
-                    type="button"
-                    disabled={Boolean(max && iso > max)}
-                    className={[
-                      styles.calendarDay,
-                      iso === value ? styles.calendarDaySelected : '',
-                      iso === todayIso ? styles.calendarDayToday : '',
-                    ].join(' ')}
-                    onClick={() => select(iso)}
-                  >
-                    {fromIsoDate(iso).getDate()}
-                  </button>
-                ) : (
-                  <span key={`empty-${i}`} />
-                ),
-              )}
-            </div>
+              ‹
+            </button>
+            <span>{monthTitle(view)}</span>
+            <button
+              type="button"
+              className={styles.calendarNav}
+              onClick={() => goToMonth(1)}
+              disabled={!canGoForward}
+              aria-label="Следующий месяц"
+            >
+              ›
+            </button>
+          </div>
+
+          <div
+            // Новый key при смене месяца перезапускает анимацию появления.
+            key={`${view.year}-${view.month}`}
+            className={`${styles.calendarGrid} ${direction ? styles[direction === 'back' ? 'slideFromLeft' : 'slideFromRight'] : ''}`}
+          >
+            {weekdayNames.map((name) => (
+              <span key={name} className={styles.calendarWeekday}>
+                {name}
+              </span>
+            ))}
+            {monthGrid(view).map((iso, i) =>
+              iso ? (
+                <button
+                  key={iso}
+                  type="button"
+                  disabled={Boolean(max && iso > max)}
+                  className={[
+                    styles.calendarDay,
+                    iso === value ? styles.calendarDaySelected : '',
+                    iso === todayIso ? styles.calendarDayToday : '',
+                  ].join(' ')}
+                  onClick={() => select(iso)}
+                >
+                  {fromIsoDate(iso).getDate()}
+                </button>
+              ) : (
+                <span key={`empty-${i}`} />
+              ),
+            )}
           </div>
         </div>
-      </div>
+      </Collapse>
     </div>
   );
 }
