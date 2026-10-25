@@ -26,13 +26,23 @@ interface DatePickerProps {
 export function DatePicker({ value, onChange, max }: DatePickerProps) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState(() => monthOf(value));
+  // Направление последнего листания — от него зависит, с какой стороны выезжает месяц.
+  const [direction, setDirection] = useState<'back' | 'forward' | null>(null);
   const todayIso = today();
   const maxMonth = max ? monthOf(max) : undefined;
   const canGoForward = !maxMonth || compareMonths(view, maxMonth) < 0;
 
   function toggle() {
-    if (!open) setView(monthOf(value));
+    if (!open) {
+      setView(monthOf(value));
+      setDirection(null);
+    }
     setOpen(!open);
+  }
+
+  function goToMonth(delta: number) {
+    setDirection(delta < 0 ? 'back' : 'forward');
+    setView(addMonths(view, delta));
   }
 
   function select(iso: string) {
@@ -51,73 +61,80 @@ export function DatePicker({ value, onChange, max }: DatePickerProps) {
     <div className={styles.datePicker}>
       <button type="button" className={`${styles.input} ${styles.dateField}`} onClick={toggle} aria-expanded={open}>
         <span>{dateLabel(value, todayIso)}</span>
-        <span className={styles.hint}>{open ? '▲' : '▼'}</span>
+        <span className={`${styles.hint} ${styles.dateArrow} ${open ? styles.dateArrowOpen : ''}`}>▼</span>
       </button>
 
-      {open && (
-        <div className={styles.calendar}>
-          <div className={styles.chips}>
-            {shortcuts.map((s) => (
-              <button
-                key={s.label}
-                type="button"
-                className={`${styles.chip} ${value === s.iso ? styles.chipActive : ''}`}
-                onClick={() => select(s.iso)}
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
-
-          <div className={styles.calendarHeader}>
-            <button
-              type="button"
-              className={styles.calendarNav}
-              onClick={() => setView(addMonths(view, -1))}
-              aria-label="Предыдущий месяц"
-            >
-              ‹
-            </button>
-            <span>{monthTitle(view)}</span>
-            <button
-              type="button"
-              className={styles.calendarNav}
-              onClick={() => setView(addMonths(view, 1))}
-              disabled={!canGoForward}
-              aria-label="Следующий месяц"
-            >
-              ›
-            </button>
-          </div>
-
-          <div className={styles.calendarGrid}>
-            {weekdayNames.map((name) => (
-              <span key={name} className={styles.calendarWeekday}>
-                {name}
-              </span>
-            ))}
-            {monthGrid(view).map((iso, i) =>
-              iso ? (
+      {/* Календарь всегда в DOM, чтобы раскрываться и сворачиваться плавно; закрытый недоступен с клавиатуры. */}
+      <div className={`${styles.collapse} ${open ? styles.collapseOpen : ''}`} inert={!open}>
+        <div className={styles.collapseInner}>
+          <div className={styles.calendar}>
+            <div className={styles.chips}>
+              {shortcuts.map((s) => (
                 <button
-                  key={iso}
+                  key={s.label}
                   type="button"
-                  disabled={Boolean(max && iso > max)}
-                  className={[
-                    styles.calendarDay,
-                    iso === value ? styles.calendarDaySelected : '',
-                    iso === todayIso ? styles.calendarDayToday : '',
-                  ].join(' ')}
-                  onClick={() => select(iso)}
+                  className={`${styles.chip} ${value === s.iso ? styles.chipActive : ''}`}
+                  onClick={() => select(s.iso)}
                 >
-                  {fromIsoDate(iso).getDate()}
+                  {s.label}
                 </button>
-              ) : (
-                <span key={`empty-${i}`} />
-              ),
-            )}
+              ))}
+            </div>
+
+            <div className={styles.calendarHeader}>
+              <button
+                type="button"
+                className={styles.calendarNav}
+                onClick={() => goToMonth(-1)}
+                aria-label="Предыдущий месяц"
+              >
+                ‹
+              </button>
+              <span>{monthTitle(view)}</span>
+              <button
+                type="button"
+                className={styles.calendarNav}
+                onClick={() => goToMonth(1)}
+                disabled={!canGoForward}
+                aria-label="Следующий месяц"
+              >
+                ›
+              </button>
+            </div>
+
+            <div
+              // Новый key при смене месяца перезапускает анимацию появления.
+              key={`${view.year}-${view.month}`}
+              className={`${styles.calendarGrid} ${direction ? styles[direction === 'back' ? 'slideFromLeft' : 'slideFromRight'] : ''}`}
+            >
+              {weekdayNames.map((name) => (
+                <span key={name} className={styles.calendarWeekday}>
+                  {name}
+                </span>
+              ))}
+              {monthGrid(view).map((iso, i) =>
+                iso ? (
+                  <button
+                    key={iso}
+                    type="button"
+                    disabled={Boolean(max && iso > max)}
+                    className={[
+                      styles.calendarDay,
+                      iso === value ? styles.calendarDaySelected : '',
+                      iso === todayIso ? styles.calendarDayToday : '',
+                    ].join(' ')}
+                    onClick={() => select(iso)}
+                  >
+                    {fromIsoDate(iso).getDate()}
+                  </button>
+                ) : (
+                  <span key={`empty-${i}`} />
+                ),
+              )}
+            </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

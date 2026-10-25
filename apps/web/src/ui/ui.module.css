@@ -365,7 +365,68 @@ textarea.input {
 .datePicker {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+}
+
+.dateArrow {
+  transition: transform 200ms ease;
+}
+
+.dateArrowOpen {
+  transform: rotate(180deg);
+}
+
+/* Плавное раскрытие на любую высоту: строка грида анимируется от 0fr до 1fr. */
+.collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 220ms ease,
+    opacity 220ms ease,
+    margin-top 220ms ease;
+}
+
+.collapseOpen {
+  grid-template-rows: 1fr;
+  margin-top: 8px;
+  opacity: 1;
+}
+
+.collapseInner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.slideFromLeft {
+  animation: slideFromLeft 200ms ease;
+}
+
+.slideFromRight {
+  animation: slideFromRight 200ms ease;
+}
+
+@keyframes slideFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+}
+
+@keyframes slideFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dateArrow,
+  .collapse,
+  .slideFromLeft,
+  .slideFromRight {
+    transition: none;
+    animation: none;
+  }
 }
 
 .dateField {
