@@ -11,10 +11,6 @@ export interface GroupMessageInput {
   atHeight: boolean;
 }
 
-const categoryIcons: Record<Category, string> = {
-  conditioning: '❄️',
-  ventilation: '🌀',
-};
 
 // Лимит текста одного сообщения в Telegram.
 export const TELEGRAM_TEXT_LIMIT = 4096;
@@ -37,7 +33,7 @@ function formatLines(lines: GroupMessageInput['works']): string[] {
   for (const category of categories) {
     const items = lines.filter((l) => l.category === category);
     if (items.length === 0) continue;
-    result.push(`${categoryIcons[category]} ${categoryLabels[category]}`);
+    result.push(categoryLabels[category]);
     for (const item of items) {
       result.push(`• ${escapeHtml(item.name)} — ${formatQty(item.qty)} ${escapeHtml(item.unit)}`);
     }
@@ -45,17 +41,18 @@ function formatLines(lines: GroupMessageInput['works']): string[] {
   return result;
 }
 
-// Сообщение в рабочую группу (parse_mode: HTML). Суммы сюда намеренно не попадают.
+// Сообщение в рабочую группу (parse_mode: HTML), без иконок. Сверху — кто работал.
+// Суммы сюда намеренно не попадают.
 export function formatGroupMessage(r: GroupMessageInput): string {
-  const place = [r.address, r.location].filter(Boolean).map(escapeHtml);
   const lines = [
-    `📍 <b>${place[0] ?? ''}</b>${place[1] ? ` · ${place[1]}` : ''}`,
-    `📅 ${formatDate(r.workDate)} · 👷 ${r.participants.map(escapeHtml).join(', ')}`,
+    `<b>${r.participants.map(escapeHtml).join(', ')}</b>`,
+    [r.address, r.location].filter(Boolean).map(escapeHtml).join(' · '),
+    formatDate(r.workDate),
   ];
-  if (r.atHeight) lines.push('🪜 Работы на высоте выше 4,5 м');
-  if (r.works.length > 0) lines.push('', '🔧 <b>Работы</b>', ...formatLines(r.works));
-  if (r.materials.length > 0) lines.push('', '📦 <b>Материалы</b>', ...formatLines(r.materials));
-  if (r.comment) lines.push('', `💬 ${escapeHtml(r.comment)}`);
+  if (r.atHeight) lines.push('Работы на высоте выше 4,5 м');
+  if (r.works.length > 0) lines.push('', '<b>Работы</b>', ...formatLines(r.works));
+  if (r.materials.length > 0) lines.push('', '<b>Материалы</b>', ...formatLines(r.materials));
+  if (r.comment) lines.push('', `Комментарий: ${escapeHtml(r.comment)}`);
   return lines.join('\n');
 }
 

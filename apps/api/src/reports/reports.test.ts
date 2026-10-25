@@ -74,7 +74,7 @@ describe('reports', () => {
 
     expect(sent).toHaveLength(1);
     expect(sent[0]!.chat_id).toBe(-1001);
-    expect(sent[0]!.text).toContain('👷 Иван Петров, Сергей Ким');
+    expect(sent[0]!.text.startsWith('<b>Иван Петров, Сергей Ким</b>\n')).toBe(true);
     expect(sent[0]!.text).toContain('• Труба ⌀110 — 0,3 м');
     expect(sent[0]!.text).not.toMatch(/₾|133/);
   });
@@ -206,7 +206,7 @@ describe('tiered prices and height coefficient', () => {
     expect(report.participants.map((p) => p.amount)).toEqual([8_000, 8_000]);
 
     await api(ivan, 'POST', `/api/reports/${report.id}/send`);
-    expect(sent[0]!.text).toContain('🪜 Работы на высоте выше 4,5 м');
+    expect(sent[0]!.text).toContain('\nРаботы на высоте выше 4,5 м\n');
   });
 });
 

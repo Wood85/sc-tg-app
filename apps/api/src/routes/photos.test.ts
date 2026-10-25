@@ -110,7 +110,7 @@ describe('photos in reports', () => {
 
     expect(sent.body.status).toBe('sent');
     expect(telegram.media).toEqual([
-      { method: 'sendMediaGroup', chat_id: -1001, photos: 2, caption: expect.stringContaining('📍 <b>Багратиони 196И</b>') },
+      { method: 'sendMediaGroup', chat_id: -1001, photos: 2, caption: expect.stringContaining('Багратиони 196И') },
     ]);
     expect(telegram.sent).toHaveLength(0);
     const rows = await db.select().from(reportPhotos).orderBy(reportPhotos.sortOrder);
