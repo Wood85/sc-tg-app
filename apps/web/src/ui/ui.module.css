@@ -112,7 +112,8 @@ textarea.input {
 }
 
 .unit {
-  width: 28px;
+  min-width: 28px;
+  white-space: nowrap;
   font-size: 14px;
   color: var(--tg-theme-hint-color, #999);
 }
@@ -170,4 +171,129 @@ textarea.input {
 
 .submit:disabled {
   opacity: 0.6;
+}
+
+/* Навигация */
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--tg-theme-secondary-bg-color, #f4f4f5);
+}
+
+.tab {
+  flex: 1;
+  padding: 8px;
+  border-radius: 8px;
+  font-size: 14px;
+  text-align: center;
+  text-decoration: none;
+  color: var(--tg-theme-text-color, #000);
+}
+
+.tabActive {
+  font-weight: 600;
+  background: var(--tg-theme-bg-color, #fff);
+}
+
+.backLink {
+  align-self: flex-start;
+  padding: 0;
+  border: none;
+  font: inherit;
+  background: none;
+  color: var(--tg-theme-link-color, #2481cc);
+}
+
+/* Списки в админке */
+
+.listRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--tg-theme-section-separator-color, rgba(128, 128, 128, 0.15));
+  text-decoration: none;
+  color: inherit;
+}
+
+.listRow:last-child {
+  border-bottom: none;
+}
+
+.muted {
+  opacity: 0.5;
+}
+
+.tag {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  background: var(--tg-theme-secondary-bg-color, #e9e9ea);
+  color: var(--tg-theme-hint-color, #777);
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+}
+
+.checkboxRow input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--tg-theme-button-color, #2481cc);
+}
+
+.secondaryButton {
+  padding: 12px;
+  border: 1px dashed var(--tg-theme-button-color, #2481cc);
+  border-radius: 10px;
+  font: inherit;
+  text-align: center;
+  text-decoration: none;
+  background: transparent;
+  color: var(--tg-theme-button-color, #2481cc);
+}
+
+/* Ступени цены */
+
+.tierRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tierBound {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+}
+
+.iconButton {
+  width: 28px;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  font-size: 22px;
+  line-height: 1;
+  background: none;
+  color: var(--tg-theme-hint-color, #999);
+}
+
+.dangerButton {
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  font: inherit;
+  background: transparent;
+  color: var(--tg-theme-destructive-text-color, #e53935);
 }

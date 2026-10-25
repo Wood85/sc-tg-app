@@ -1,5 +1,6 @@
 import { sign } from '@tma.js/init-data-node';
 import { sql } from 'drizzle-orm';
+import { bot } from '../src/bot.ts';
 import { db } from '../src/db/index.ts';
 import { materials, priceItems, users } from '../src/db/schema.ts';
 
@@ -10,8 +11,8 @@ export async function resetDb() {
   `);
 }
 
-export async function createUser(name: string, telegramId: number) {
-  const [user] = await db.insert(users).values({ name, telegramId }).returning();
+export async function createUser(name: string, telegramId: number, role: 'installer' | 'admin' = 'installer') {
+  const [user] = await db.insert(users).values({ name, telegramId, role }).returning();
   return user!;
 }
 
@@ -33,4 +34,16 @@ export async function createCatalog() {
 export function authHeader(telegramId: number) {
   const initData = sign({ user: { id: telegramId, first_name: 'Test' } }, process.env.BOT_TOKEN!, new Date());
   return { authorization: `tma ${initData}` };
+}
+
+// Вместо Telegram запоминаем отправленные сообщения. Вызывать один раз на файл тестов.
+export function mockTelegram() {
+  const state = { sent: [] as { chat_id: number; text: string }[], down: false };
+  bot.api.config.use(async (prev, method, payload, signal) => {
+    if (method !== 'sendMessage') return prev(method, payload, signal);
+    if (state.down) return { ok: false, error_code: 400, description: 'Bad Request: chat not found' } as never;
+    state.sent.push(payload as { chat_id: number; text: string });
+    return { ok: true, result: { message_id: 100 + state.sent.length } } as never;
+  });
+  return state;
 }

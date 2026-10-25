@@ -1,6 +1,7 @@
-import { type Category, categories, categoryLabels, formatMoney } from '@sc/shared';
+import { type Category, categories, categoryLabels, parseQtyInput, type PriceTier } from '@sc/shared';
 import { useState } from 'react';
-import styles from './ReportForm.module.css';
+import { priceHint } from '../../ui/price.ts';
+import styles from '../../ui/ui.module.css';
 
 interface PickerItem {
   id: number;
@@ -8,6 +9,7 @@ interface PickerItem {
   name: string;
   unit: string;
   price?: number;
+  tiers?: PriceTier[] | null;
 }
 
 interface ItemPickerProps {
@@ -52,7 +54,7 @@ export function ItemPicker({ title, items, values, isInvalid, onChange }: ItemPi
                     {item.name}
                     {item.price !== undefined && (
                       <span className={styles.hint}>
-                        {formatMoney(item.price)} / {item.unit}
+                        {priceHint({ price: item.price, unit: item.unit, tiers: item.tiers ?? null }, parseQtyInput(value))}
                       </span>
                     )}
                   </span>

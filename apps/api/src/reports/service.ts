@@ -2,9 +2,11 @@ import {
   type EarningsDto,
   lineAmount,
   type ReportDraft,
+  reportTotal,
   type ReportDto,
   type ReportListItemDto,
   splitEqually,
+  unitPriceFor,
 } from '@sc/shared';
 import { and, asc, between, count, desc, eq, inArray, sql } from 'drizzle-orm';
 import { GrammyError } from 'grammy';
@@ -17,8 +19,9 @@ import { formatGroupMessage, splitMessage } from './format.ts';
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-// Перезаписывает содержимое отчёта целиком: цены берутся из текущего прайса,
-// сумма делится поровну между автором и участниками (остаток — автору).
+// Перезаписывает содержимое отчёта целиком: цены берутся из текущего прайса
+// (ступенчатые — по количеству в строке), к сумме применяется коэффициент за высоту,
+// и она делится поровну между автором и участниками (остаток — автору).
 async function writeContent(tx: Tx, reportId: number, authorId: number, input: ReportDraft) {
   const participantIds = [authorId, ...new Set(input.participantIds.filter((id) => id !== authorId))];
   const activeUsers = await tx
@@ -31,14 +34,15 @@ async function writeContent(tx: Tx, reportId: number, authorId: number, input: R
   const prices =
     priceIds.length > 0
       ? await tx
-          .select({ id: priceItems.id, price: priceItems.price })
+          .select({ id: priceItems.id, price: priceItems.price, tiers: priceItems.tiers })
           .from(priceItems)
           .where(and(inArray(priceItems.id, priceIds), eq(priceItems.isActive, true)))
       : [];
-  const priceById = new Map(prices.map((p) => [p.id, p.price]));
+  const priceItemById = new Map(prices.map((p) => [p.id, p]));
   const works = input.works.map((w) => {
-    const unitPrice = priceById.get(w.priceItemId);
-    if (unitPrice === undefined) throw new HttpError(400, `Unknown price item ${w.priceItemId}`);
+    const item = priceItemById.get(w.priceItemId);
+    if (!item) throw new HttpError(400, `Unknown price item ${w.priceItemId}`);
+    const unitPrice = unitPriceFor(item, w.qty);
     return { reportId, priceItemId: w.priceItemId, qty: w.qty, unitPriceSnapshot: unitPrice, amount: lineAmount(w.qty, unitPrice) };
   });
 
@@ -52,7 +56,10 @@ async function writeContent(tx: Tx, reportId: number, authorId: number, input: R
       : [];
   if (activeMaterials.length !== materialIds.length) throw new HttpError(400, 'Unknown material');
 
-  const total = works.reduce((sum, w) => sum + w.amount, 0);
+  const total = reportTotal(
+    works.map((w) => w.amount),
+    input.atHeight,
+  );
   const shares = splitEqually(total, participantIds.length);
 
   await tx.delete(reportParticipants).where(eq(reportParticipants.reportId, reportId));
@@ -76,6 +83,7 @@ async function writeContent(tx: Tx, reportId: number, authorId: number, input: R
       location: input.location,
       workDate: input.workDate,
       comment: input.comment,
+      atHeight: input.atHeight,
       totalAmount: total,
     })
     .where(eq(reports.id, reportId));
@@ -166,6 +174,7 @@ export async function getReport(userId: number, reportId: number): Promise<Repor
     location: report.location,
     workDate: report.workDate,
     comment: report.comment,
+    atHeight: report.atHeight,
     totalAmount: report.totalAmount,
     author: { id: report.authorId, name: author?.name ?? '' },
     participants,
@@ -220,6 +229,7 @@ export async function sendReport(userId: number, reportId: number): Promise<Repo
         location: draft.location,
         workDate: draft.workDate,
         comment: draft.comment,
+        atHeight: draft.atHeight,
         participantIds: draft.participants.map((p) => p.id),
         works: draft.works.map((w) => ({ priceItemId: w.priceItemId, qty: w.qty })),
         materials: draft.materials.map((m) => ({ materialId: m.materialId, qty: m.qty })),

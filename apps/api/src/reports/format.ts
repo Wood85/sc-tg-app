@@ -8,6 +8,7 @@ export interface GroupMessageInput {
   works: { category: Category; name: string; unit: string; qty: number }[];
   materials: { category: Category; name: string; unit: string; qty: number }[];
   comment: string;
+  atHeight: boolean;
 }
 
 const categoryIcons: Record<Category, string> = {
@@ -51,6 +52,7 @@ export function formatGroupMessage(r: GroupMessageInput): string {
     `📍 <b>${place[0] ?? ''}</b>${place[1] ? ` · ${place[1]}` : ''}`,
     `📅 ${formatDate(r.workDate)} · 👷 ${r.participants.map(escapeHtml).join(', ')}`,
   ];
+  if (r.atHeight) lines.push('🪜 Работы на высоте выше 4,5 м');
   if (r.works.length > 0) lines.push('', '🔧 <b>Работы</b>', ...formatLines(r.works));
   if (r.materials.length > 0) lines.push('', '📦 <b>Материалы</b>', ...formatLines(r.materials));
   if (r.comment) lines.push('', `💬 ${escapeHtml(r.comment)}`);

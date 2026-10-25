@@ -1,4 +1,4 @@
-import { categories, reportStatuses, roles } from '@sc/shared';
+import { categories, type PriceTier, reportStatuses, roles } from '@sc/shared';
 import { sql } from 'drizzle-orm';
 import {
   bigint,
@@ -6,6 +6,7 @@ import {
   date,
   index,
   integer,
+  jsonb,
   numeric,
   pgEnum,
   pgTable,
@@ -42,6 +43,8 @@ export const priceItems = pgTable(
     name: text().notNull(),
     unit: text().notNull(),
     price: integer().notNull(),
+    // Ступенчатая цена по общему количеству в отчёте; null — обычная цена.
+    tiers: jsonb().$type<PriceTier[]>(),
     isActive: boolean().notNull().default(true),
     sortOrder: integer().notNull().default(0),
   },
@@ -72,6 +75,7 @@ export const reports = pgTable(
     location: text().notNull().default(''),
     workDate: date({ mode: 'string' }).notNull(),
     comment: text().notNull().default(''),
+    atHeight: boolean().notNull().default(false),
     status: reportStatusEnum().notNull().default('draft'),
     totalAmount: integer().notNull().default(0),
     tgMessageIds: integer().array().notNull().default(sql`'{}'`),

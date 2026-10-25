@@ -15,6 +15,13 @@
       "when": 1792935739937,
       "tag": "0001_report_sending_status",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792951378988,
+      "tag": "0002_tiers_and_height",
+      "breakpoints": true
     }
   ]
 }

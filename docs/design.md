@@ -15,6 +15,9 @@ Telegram Mini App для монтажников (кондиционирован�
 - **Отчётов может быть несколько в день** (несколько объектов), можно отправить и после окончания работ (дата задним числом).
 - **Объект — не справочник.** В отчёте есть поля `address` (с подсказками из прошлых отчётов) и `location` (этаж/квартира, свободный текст).
 - **Работы и материалы разделены:** это два справочника и два блока в форме и сообщении. Материалы пока только учитываются по расходу, без склада.
+- **Ступенчатые цены** (закладка трасс, гибкие воздуховоды): ступень выбирается по сумме метров этой работы в отчёте.
+- **Работы на высоте > 4,5 м:** галочка на весь отчёт, сумма × 1,2.
+- **Договорные объекты** (застройщики, ТЦ) через приложение не проходят.
 - **Сумму считает бэкенд**, цена фиксируется снапшотом в строке отчёта. Деньги хранятся в целых минимальных единицах (тетри/копейки).
 - **Авторизация:** HMAC-проверка `initData` на бэкенде + белый список `users.is_active`. Роли: `installer`, `admin`.
 
@@ -35,9 +38,9 @@ Telegram Mini App для монтажников (кондиционирован�
 
 ```
 users                id, telegram_id, name, role (installer|admin), is_active
-price_items          id, category (conditioning|ventilation), name, unit, price, is_active
+price_items          id, category (conditioning|ventilation), name, unit, price, tiers (jsonb, ступени по объёму), is_active
 materials            id, category, name, unit, is_active
-reports              id, author_id, address, location, work_date, comment,
+reports              id, author_id, address, location, work_date, comment, at_height,
                      status (draft|sending|sent), total_amount, tg_message_ids, created_at, sent_at
 report_participants  report_id, user_id, amount
 report_works         report_id, price_item_id, qty numeric(10,2), unit_price_snapshot, amount
@@ -87,4 +90,5 @@ report_photos        report_id, s3_key, tg_file_id, sort_order
 4. [x] Сквозной минимум внутри Telegram: бот + туннель → «Привет, {имя}».
 5. [x] API отчётов: черновики, отправка в группу, заработок по дням (ветка `feature/reports-api`).
 6. [ ] Фронт: форма отчёта (v1 готова, ветка `feature/report-form`) → список отчётов → профиль с заработком.
-7. [ ] Фото (Cloudflare R2 → альбом в Telegram) → админка (прайс, материалы, монтажники) → деплой.
+7. [x] Админка в Mini App: работы, материалы, люди (ветка `feature/admin`). Категорий две, зашиты в код — так решили.
+8. [ ] Фото (Cloudflare R2 → альбом в Telegram) → деплой.

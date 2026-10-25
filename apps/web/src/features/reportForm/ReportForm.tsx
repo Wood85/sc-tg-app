@@ -1,4 +1,13 @@
-import { formatMoney, lineAmount, parseQtyInput, splitEqually, type MeDto, type ReportDto } from '@sc/shared';
+import {
+  formatMoney,
+  lineAmount,
+  type MeDto,
+  parseQtyInput,
+  type ReportDto,
+  reportTotal,
+  splitEqually,
+  unitPriceFor,
+} from '@sc/shared';
 import { useState } from 'react';
 import {
   errorMessage,
@@ -13,8 +22,9 @@ import {
 import { useAppDispatch, useAppSelector } from '../../app/hooks.ts';
 import { haptic, isInsideTelegram, useMainButton } from '../../telegram.ts';
 import { ItemPicker } from './ItemPicker.tsx';
-import styles from './ReportForm.module.css';
+import styles from '../../ui/ui.module.css';
 import {
+  atHeightToggled,
   draftCreated,
   fieldChanged,
   formReset,
@@ -54,12 +64,13 @@ function ReportFormBody({ me, onSent }: { me: MeDto; onSent: (report: ReportDto)
   const colleagues = users.data?.filter((u) => u.id !== me.id) ?? [];
 
   // Предварительный расчёт; окончательную сумму считает сервер при отправке.
-  const priceById = new Map(catalog.data?.priceItems.map((p) => [p.id, p.price]));
-  const total = Object.entries(form.works).reduce((sum, [id, raw]) => {
+  const priceItemById = new Map(catalog.data?.priceItems.map((p) => [p.id, p]));
+  const lineAmounts = Object.entries(form.works).map(([id, raw]) => {
     const qty = parseQtyInput(raw);
-    const price = priceById.get(Number(id));
-    return qty && price !== undefined ? sum + lineAmount(qty, price) : sum;
-  }, 0);
+    const item = priceItemById.get(Number(id));
+    return qty && item ? lineAmount(qty, unitPriceFor(item, qty)) : 0;
+  });
+  const total = reportTotal(lineAmounts, form.atHeight);
   const myShare = splitEqually(total, 1 + form.participantIds.length)[0] ?? 0;
 
   async function submit() {
@@ -142,6 +153,10 @@ function ReportFormBody({ me, onSent }: { me: MeDto; onSent: (report: ReportDto)
             onChange={(e) => dispatch(fieldChanged({ field: 'workDate', value: e.target.value || today() }))}
           />
         </label>
+        <label className={styles.checkboxRow}>
+          <input type="checkbox" checked={form.atHeight} onChange={() => dispatch(atHeightToggled())} />
+          Работы на высоте выше 4,5 м (×1,2)
+        </label>
       </section>
 
       {colleagues.length > 0 && (
@@ -191,7 +206,7 @@ function ReportFormBody({ me, onSent }: { me: MeDto; onSent: (report: ReportDto)
 
       <section className={styles.summary}>
         <div>
-          Сумма по прайсу: <b>{formatMoney(total)}</b>
+          Сумма по прайсу{form.atHeight && ' с коэффициентом 1,2'}: <b>{formatMoney(total)}</b>
         </div>
         {form.participantIds.length > 0 && (
           <div>

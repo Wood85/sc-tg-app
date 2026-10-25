@@ -14,6 +14,7 @@ export async function catalogRoutes(app: FastifyInstance) {
           name: priceItems.name,
           unit: priceItems.unit,
           price: priceItems.price,
+          tiers: priceItems.tiers,
         })
         .from(priceItems)
         .where(eq(priceItems.isActive, true))

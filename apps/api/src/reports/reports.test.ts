@@ -2,21 +2,13 @@ import type { EarningsDto, ReportDraftInput, ReportDto, ReportListItemDto } from
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { authHeader, createCatalog, createUser, resetDb } from '../../test/helpers.ts';
+import { authHeader, createCatalog, createUser, mockTelegram, resetDb } from '../../test/helpers.ts';
 import { buildApp } from '../app.ts';
-import { bot } from '../bot.ts';
 import { client, db } from '../db/index.ts';
 import { priceItems, type User } from '../db/schema.ts';
 
-// Вместо Telegram запоминаем, что ушло бы в группу.
-const sent: { chat_id: number; text: string }[] = [];
-let telegramDown = false;
-bot.api.config.use(async (prev, method, payload, signal) => {
-  if (method !== 'sendMessage') return prev(method, payload, signal);
-  if (telegramDown) return { ok: false, error_code: 400, description: 'Bad Request: chat not found' } as never;
-  sent.push(payload as { chat_id: number; text: string });
-  return { ok: true, result: { message_id: 100 + sent.length } } as never;
-});
+const telegram = mockTelegram();
+const sent = telegram.sent;
 
 let app: FastifyInstance;
 let ivan: User;
@@ -35,7 +27,7 @@ afterAll(async () => {
 beforeEach(async () => {
   await resetDb();
   sent.length = 0;
-  telegramDown = false;
+  telegram.down = false;
   ivan = await createUser('Иван Петров', 1001);
   sergey = await createUser('Сергей Ким', 1002);
   catalog = await createCatalog();
@@ -148,13 +140,13 @@ describe('reports', () => {
 
   it('returns the report to draft when Telegram fails', async () => {
     const { body: report } = await api<ReportDto>(ivan, 'POST', '/api/reports', draft());
-    telegramDown = true;
+    telegram.down = true;
 
     const failed = await api(ivan, 'POST', `/api/reports/${report.id}/send`);
     expect(failed.status).toBe(502);
     expect((await api<ReportDto>(ivan, 'GET', `/api/reports/${report.id}`)).body.status).toBe('draft');
 
-    telegramDown = false;
+    telegram.down = false;
     expect((await api<ReportDto>(ivan, 'POST', `/api/reports/${report.id}/send`)).body.status).toBe('sent');
   });
 
@@ -172,6 +164,48 @@ describe('reports', () => {
     const later = await api<ReportDto>(ivan, 'GET', `/api/reports/${report.id}`);
     expect(later.body.totalAmount).toBe(6_000);
     expect(later.body.works[0]!.unitPrice).toBe(6_000);
+  });
+});
+
+describe('tiered prices and height coefficient', () => {
+  async function createRouteLaying() {
+    // Закладка трассы: до 6 м — 8 ₾/м, до 10 м — 7 ₾/м, больше — 6 ₾/м.
+    const [item] = await db
+      .insert(priceItems)
+      .values({
+        category: 'conditioning',
+        name: 'Закладка трассы',
+        unit: 'м',
+        price: 800,
+        tiers: [
+          { upTo: 6, price: 800 },
+          { upTo: 10, price: 700 },
+          { upTo: null, price: 600 },
+        ],
+      })
+      .returning();
+    return item!;
+  }
+
+  it('picks the price tier by the total quantity in the report', async () => {
+    const route = await createRouteLaying();
+    const report = (qty: number) =>
+      api<ReportDto>(ivan, 'POST', '/api/reports', draft({ participantIds: [], materials: [], works: [{ priceItemId: route.id, qty }] }));
+
+    expect((await report(5)).body.totalAmount).toBe(4_000);
+    const eight = await report(8);
+    expect(eight.body.works[0]).toMatchObject({ unitPrice: 700, amount: 5_600 });
+    expect((await report(15.5)).body.totalAmount).toBe(9_300);
+  });
+
+  it('multiplies the whole report by 1.2 for work at height and says so in the group', async () => {
+    const { body: report } = await api<ReportDto>(ivan, 'POST', '/api/reports', draft({ atHeight: true }));
+    // (2 × 50 + 33,33) × 1,2 = 159,996 → 160,00 ₾
+    expect(report.totalAmount).toBe(16_000);
+    expect(report.participants.map((p) => p.amount)).toEqual([8_000, 8_000]);
+
+    await api(ivan, 'POST', `/api/reports/${report.id}/send`);
+    expect(sent[0]!.text).toContain('🪜 Работы на высоте выше 4,5 м');
   });
 });
 

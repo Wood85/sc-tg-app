@@ -14,12 +14,14 @@ describe('formatGroupMessage', () => {
       ],
       materials: [{ category: 'ventilation', name: 'Труба ⌀110', unit: 'м', qty: 0.3 }],
       comment: 'Приточка без монтажа',
+      atHeight: true,
     });
 
     expect(text).toBe(
       [
         '📍 <b>Багратиони 196И</b> · 10 этаж',
         '📅 24.10.2026 · 👷 Иван Петров, Сергей Ким',
+        '🪜 Работы на высоте выше 4,5 м',
         '',
         '🔧 <b>Работы</b>',
         '❄️ Кондиционирование',
@@ -45,6 +47,7 @@ describe('formatGroupMessage', () => {
       works: [],
       materials: [],
       comment: '',
+      atHeight: false,
     });
     expect(text).toBe('📍 <b>Дом &lt;5&gt;</b>\n📅 02.01.2026 · 👷 A&amp;B');
   });

@@ -10,6 +10,7 @@ export interface ReportFormState {
   works: Record<number, string>;
   materials: Record<number, string>;
   comment: string;
+  atHeight: boolean;
   // Черновик на сервере, если первая попытка отправки уже создала его.
   draftId: number | null;
 }
@@ -28,6 +29,7 @@ export function emptyForm(): ReportFormState {
     works: {},
     materials: {},
     comment: '',
+    atHeight: false,
     draftId: null,
   };
 }
@@ -41,6 +43,9 @@ const reportFormSlice = createSlice({
       action: PayloadAction<{ field: 'address' | 'location' | 'workDate' | 'comment'; value: string }>,
     ) {
       state[action.payload.field] = action.payload.value;
+    },
+    atHeightToggled(state) {
+      state.atHeight = !state.atHeight;
     },
     participantToggled(state, action: PayloadAction<number>) {
       const id = action.payload;
@@ -60,7 +65,7 @@ const reportFormSlice = createSlice({
   },
 });
 
-export const { fieldChanged, participantToggled, qtyChanged, draftCreated, formReset } = reportFormSlice.actions;
+export const { fieldChanged, atHeightToggled, participantToggled, qtyChanged, draftCreated, formReset } = reportFormSlice.actions;
 export const reportFormReducer = reportFormSlice.reducer;
 
 function toLines(entries: Record<number, string>) {
@@ -99,5 +104,6 @@ export function toDraftInput(form: ReportFormState): ReportDraftInput {
     works: toLines(form.works).map((l) => ({ priceItemId: l.id, qty: l.qty! })),
     materials: toLines(form.materials).map((l) => ({ materialId: l.id, qty: l.qty! })),
     comment: form.comment.trim(),
+    atHeight: form.atHeight,
   };
 }
