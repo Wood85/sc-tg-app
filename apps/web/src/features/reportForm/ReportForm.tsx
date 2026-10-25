@@ -21,6 +21,8 @@ import {
 } from '../../api/baseApi.ts';
 import { useAppDispatch, useAppSelector } from '../../app/hooks.ts';
 import { haptic, isInsideTelegram, useMainButton } from '../../telegram.ts';
+import { today } from '../../ui/dates.ts';
+import { DatePicker } from '../../ui/DatePicker.tsx';
 import { ItemPicker } from './ItemPicker.tsx';
 import { PhotoPicker } from './PhotoPicker.tsx';
 import styles from '../../ui/ui.module.css';
@@ -33,7 +35,6 @@ import {
   participantToggled,
   qtyChanged,
   toDraftInput,
-  today,
   validateForm,
 } from './reportFormSlice.ts';
 
@@ -150,16 +151,14 @@ function ReportFormBody({ me, onSent }: { me: MeDto; onSent: (report: ReportDto)
           value={form.location}
           onChange={(e) => dispatch(fieldChanged({ field: 'location', value: e.target.value }))}
         />
-        <label className={styles.field}>
+        <div className={styles.field}>
           <span className={styles.hint}>Дата работ</span>
-          <input
-            className={styles.input}
-            type="date"
-            max={today()}
+          <DatePicker
             value={form.workDate}
-            onChange={(e) => dispatch(fieldChanged({ field: 'workDate', value: e.target.value || today() }))}
+            max={today()}
+            onChange={(value) => dispatch(fieldChanged({ field: 'workDate', value }))}
           />
-        </label>
+        </div>
         <label className={styles.checkboxRow}>
           <input type="checkbox" checked={form.atHeight} onChange={() => dispatch(atHeightToggled())} />
           Работы на высоте выше 4,5 м (×1,2)
