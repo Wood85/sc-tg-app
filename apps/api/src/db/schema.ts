@@ -125,14 +125,22 @@ export const reportMaterials = pgTable('report_materials', {
   qty: qty(),
 });
 
-export const reportPhotos = pgTable('report_photos', {
-  id: id(),
-  reportId: integer()
-    .notNull()
-    .references(() => reports.id, { onDelete: 'cascade' }),
-  s3Key: text(),
-  tgFileId: text(),
-  sortOrder: integer().notNull().default(0),
-});
+// Фото загружаются до сохранения отчёта, поэтому reportId может быть пустым.
+// Фото без отчёта (не прикреплённые или от удалённого черновика) удаляет очистка.
+export const reportPhotos = pgTable(
+  'report_photos',
+  {
+    id: id(),
+    reportId: integer().references(() => reports.id, { onDelete: 'set null' }),
+    uploaderId: integer()
+      .notNull()
+      .references(() => users.id),
+    storageKey: text().notNull(),
+    tgFileId: text(),
+    sortOrder: integer().notNull().default(0),
+    createdAt: createdAt(),
+  },
+  (t) => [index().on(t.reportId)],
+);
 
 export type User = typeof users.$inferSelect;

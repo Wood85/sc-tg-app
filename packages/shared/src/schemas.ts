@@ -22,6 +22,9 @@ export const qtySchema = z
 
 export const isoDateSchema = z.iso.date();
 
+// Альбом в Telegram — не больше 10 фото.
+export const MAX_REPORT_PHOTOS = 10;
+
 // Черновик может быть неполным; обязательность адреса и строк проверяется при отправке.
 export const reportDraftSchema = z.object({
   address: z.string().trim().max(200).default(''),
@@ -38,6 +41,12 @@ export const reportDraftSchema = z.object({
   comment: z.string().trim().max(1000).default(''),
   // Работы на высоте выше 4,5 м: вся сумма × 1,2.
   atHeight: z.boolean().default(false),
+  // Загруженные заранее фото (POST /api/photos) в порядке показа.
+  photoIds: z
+    .array(z.number().int().positive())
+    .max(MAX_REPORT_PHOTOS, `Не больше ${MAX_REPORT_PHOTOS} фото`)
+    .refine((ids) => new Set(ids).size === ids.length, 'Фото повторяются')
+    .default([]),
 });
 export type ReportDraftInput = z.input<typeof reportDraftSchema>;
 export type ReportDraft = z.output<typeof reportDraftSchema>;
@@ -177,7 +186,12 @@ export interface ReportDto {
     unit: string;
     qty: number;
   }[];
+  photos: PhotoDto[];
   sentAt: string | null;
+}
+
+export interface PhotoDto {
+  id: number;
 }
 
 export interface EarningsDto {

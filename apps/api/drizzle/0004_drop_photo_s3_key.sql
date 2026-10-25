@@ -1,0 +1,1 @@
+ALTER TABLE "report_photos" DROP COLUMN "s3_key";

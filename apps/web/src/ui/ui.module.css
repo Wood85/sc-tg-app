@@ -297,3 +297,65 @@ textarea.input {
   background: transparent;
   color: var(--tg-theme-destructive-text-color, #e53935);
 }
+
+/* Фото */
+
+.photoGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.photoTile {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--tg-theme-bg-color, #fff);
+}
+
+.photoImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photoOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: none;
+  font: inherit;
+  font-size: 12px;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+}
+
+.photoRemove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  font-size: 16px;
+  line-height: 24px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+}
+
+.photoAdd {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--tg-theme-button-color, #2481cc);
+  font-size: 14px;
+  color: var(--tg-theme-button-color, #2481cc);
+  background: transparent;
+}
