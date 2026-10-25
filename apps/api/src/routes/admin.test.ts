@@ -82,6 +82,35 @@ describe('price items', () => {
   });
 });
 
+describe('tiered price items', () => {
+  it('stores tiers and uses the first tier as the display price', async () => {
+    const tiers = [
+      { upTo: 50, price: 600 },
+      { upTo: null, price: 550 },
+    ];
+    const created = await api<AdminPriceItemDto>(admin.telegramId, 'POST', '/api/admin/price-items', {
+      ...work,
+      name: 'Прокладка гибкого воздуховода',
+      unit: 'м',
+      price: 0,
+      tiers,
+    });
+    expect(created.status).toBe(201);
+    expect(created.body).toMatchObject({ price: 600, tiers });
+
+    const bad = await api(admin.telegramId, 'POST', '/api/admin/price-items', { ...work, name: 'X', tiers: [{ upTo: 5, price: 1 }, { upTo: 3, price: 1 }] });
+    expect(bad.status).toBe(400);
+
+    const flat = await api<AdminPriceItemDto>(admin.telegramId, 'PUT', `/api/admin/price-items/${created.body.id}`, {
+      ...work,
+      name: 'Прокладка гибкого воздуховода',
+      price: 500,
+      tiers: null,
+    });
+    expect(flat.body).toMatchObject({ price: 500, tiers: null });
+  });
+});
+
 describe('materials', () => {
   it('creates and edits materials', async () => {
     const material = { category: 'ventilation', name: 'Труба ⌀110', unit: 'м' };

@@ -4,6 +4,9 @@ import {
   categoryLabels,
   formatMoneyInput,
   parseMoneyInput,
+  parseQtyInput,
+  type PriceTier,
+  priceTiersSchema,
 } from '@sc/shared';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
@@ -21,12 +24,38 @@ import type { CatalogKind } from './CatalogList.tsx';
 
 const commonUnits = ['шт', 'м', 'п.м.', 'м²', 'компл.'];
 
+// Ступень в форме: строки как ввёл админ; у последней ступени границы нет.
+interface TierValues {
+  upTo: string;
+  price: string;
+}
+
 interface Values {
   category: Category;
   name: string;
   unit: string;
   price: string;
+  tiered: boolean;
+  tiers: TierValues[];
   isActive: boolean;
+}
+
+function toTierValues(tiers: PriceTier[]): TierValues[] {
+  return tiers.map((t) => ({ upTo: t.upTo === null ? '' : String(t.upTo).replace('.', ','), price: formatMoneyInput(t.price) }));
+}
+
+function parseTiers(rows: TierValues[]): PriceTier[] | string {
+  const tiers: PriceTier[] = [];
+  for (const [i, row] of rows.entries()) {
+    const isLast = i === rows.length - 1;
+    const upTo = isLast ? null : parseQtyInput(row.upTo);
+    const price = parseMoneyInput(row.price);
+    if (upTo === undefined) return `Ступень ${i + 1}: граница — число больше нуля`;
+    if (price === undefined) return `Ступень ${i + 1}: цена — число в лари`;
+    tiers.push({ upTo, price });
+  }
+  const result = priceTiersSchema.safeParse(tiers);
+  return result.success ? result.data : (result.error.issues[0]?.message ?? 'Некорректные ступени');
 }
 
 export function CatalogItemEdit({ kind }: { kind: CatalogKind }) {
@@ -47,9 +76,11 @@ export function CatalogItemEdit({ kind }: { kind: CatalogKind }) {
         name: existing.name,
         unit: existing.unit,
         price: priceItem ? formatMoneyInput(priceItem.price) : '',
+        tiered: Boolean(priceItem?.tiers),
+        tiers: priceItem?.tiers ? toTierValues(priceItem.tiers) : [],
         isActive: existing.isActive,
       }
-    : { category: 'conditioning', name: '', unit: 'шт', price: '', isActive: true };
+    : { category: 'conditioning', name: '', unit: 'шт', price: '', tiered: false, tiers: [], isActive: true };
 
   // key сбрасывает состояние формы при переходе к другой позиции.
   return <CatalogItemForm key={idParam} kind={kind} id={id} initial={initial} />;
@@ -66,14 +97,47 @@ function CatalogItemForm({ kind, id, initial }: { kind: CatalogKind; id: number 
 
   const set = <K extends keyof Values>(key: K, value: Values[K]) => setValues((v) => ({ ...v, [key]: value }));
 
-  async function save() {
-    const price = parseMoneyInput(values.price);
-    if (!values.name.trim() || !values.unit.trim()) return fail('Заполните название и единицу измерения');
-    if (kind === 'works' && price === undefined) return fail('Цена — число в лари, например 25 или 25,50');
+  function setTiered(tiered: boolean) {
+    setValues((v) => ({
+      ...v,
+      tiered,
+      // Первая ступень наследует обычную цену, вторая — «больше».
+      tiers: tiered && v.tiers.length === 0 ? [{ upTo: '', price: v.price }, { upTo: '', price: '' }] : v.tiers,
+    }));
+  }
 
+  function setTier(index: number, field: keyof TierValues, value: string) {
+    setValues((v) => ({ ...v, tiers: v.tiers.map((t, i) => (i === index ? { ...t, [field]: value } : t)) }));
+  }
+
+  function addTier() {
+    // Новая ступень встаёт перед последней («больше …»).
+    setValues((v) => ({ ...v, tiers: [...v.tiers.slice(0, -1), { upTo: '', price: '' }, ...v.tiers.slice(-1)] }));
+  }
+
+  function removeTier(index: number) {
+    setValues((v) => ({ ...v, tiers: v.tiers.filter((_, i) => i !== index) }));
+  }
+
+  async function save() {
+    if (!values.name.trim() || !values.unit.trim()) return fail('Заполните название и единицу измерения');
     const base = { category: values.category, name: values.name.trim(), unit: values.unit.trim(), isActive: values.isActive };
+
+    let pricing: { price: number; tiers: PriceTier[] | null } | undefined;
+    if (kind === 'works') {
+      if (values.tiered) {
+        const tiers = parseTiers(values.tiers);
+        if (typeof tiers === 'string') return fail(tiers);
+        pricing = { price: tiers[0]!.price, tiers };
+      } else {
+        const price = parseMoneyInput(values.price);
+        if (price === undefined) return fail('Цена — число в лари, например 25 или 25,50');
+        pricing = { price, tiers: null };
+      }
+    }
+
     try {
-      if (kind === 'works') await savePriceItem({ id, body: { ...base, price: price! } }).unwrap();
+      if (pricing) await savePriceItem({ id, body: { ...base, ...pricing } }).unwrap();
       else await saveMaterial({ id, body: base }).unwrap();
       haptic('success');
       navigate(listPath);
@@ -133,6 +197,12 @@ function CatalogItemForm({ kind, id, initial }: { kind: CatalogKind; id: number 
           </datalist>
         </label>
         {kind === 'works' && (
+          <label className={styles.checkboxRow}>
+            <input type="checkbox" checked={values.tiered} onChange={(e) => setTiered(e.target.checked)} />
+            Цена зависит от объёма в отчёте
+          </label>
+        )}
+        {kind === 'works' && !values.tiered && (
           <label className={styles.field}>
             <span className={styles.hint}>Цена за единицу, ₾</span>
             <input
@@ -143,6 +213,49 @@ function CatalogItemForm({ kind, id, initial }: { kind: CatalogKind; id: number 
               onChange={(e) => set('price', e.target.value)}
             />
           </label>
+        )}
+        {kind === 'works' && values.tiered && (
+          <div className={styles.field}>
+            <span className={styles.hint}>Цена за {values.unit || 'единицу'}, ₾ — по общему объёму в отчёте</span>
+            {values.tiers.map((tier, i) => {
+              const isLast = i === values.tiers.length - 1;
+              return (
+                <div key={i} className={styles.tierRow}>
+                  {isLast ? (
+                    <span className={styles.tierBound}>{values.tiers.length > 1 ? 'больше' : 'любой объём'}</span>
+                  ) : (
+                    <span className={styles.tierBound}>
+                      до
+                      <input
+                        className={styles.qtyInput}
+                        inputMode="decimal"
+                        value={tier.upTo}
+                        onChange={(e) => setTier(i, 'upTo', e.target.value)}
+                      />
+                      {values.unit}
+                    </span>
+                  )}
+                  <input
+                    className={styles.qtyInput}
+                    inputMode="decimal"
+                    placeholder="₾"
+                    value={tier.price}
+                    onChange={(e) => setTier(i, 'price', e.target.value)}
+                  />
+                  {!isLast && values.tiers.length > 2 ? (
+                    <button type="button" className={styles.iconButton} onClick={() => removeTier(i)} aria-label="Удалить ступень">
+                      ×
+                    </button>
+                  ) : (
+                    <span className={styles.iconButton} />
+                  )}
+                </div>
+              );
+            })}
+            <button type="button" className={styles.backLink} onClick={addTier}>
+              + ступень
+            </button>
+          </div>
         )}
         <label className={styles.checkboxRow}>
           <input type="checkbox" checked={values.isActive} onChange={(e) => set('isActive', e.target.checked)} />

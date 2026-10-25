@@ -1,6 +1,7 @@
-import { type Category, categories, categoryLabels, formatMoney } from '@sc/shared';
+import { type Category, categories, categoryLabels, type PriceTier } from '@sc/shared';
 import { Link } from 'react-router';
 import { errorMessage, useGetAdminMaterialsQuery, useGetAdminPriceItemsQuery } from '../../api/baseApi.ts';
+import { priceHint } from '../../ui/price.ts';
 import styles from '../../ui/ui.module.css';
 
 export type CatalogKind = 'works' | 'materials';
@@ -11,6 +12,7 @@ interface Row {
   name: string;
   unit: string;
   price?: number;
+  tiers?: PriceTier[] | null;
   isActive: boolean;
 }
 
@@ -44,7 +46,9 @@ export function CatalogList({ kind }: { kind: CatalogKind }) {
                   <span className={styles.itemName}>
                     {row.name}
                     <span className={styles.hint}>
-                      {row.price !== undefined ? `${formatMoney(row.price)} / ${row.unit}` : row.unit}
+                      {row.price !== undefined
+                        ? priceHint({ price: row.price, unit: row.unit, tiers: row.tiers ?? null })
+                        : row.unit}
                     </span>
                   </span>
                   {!row.isActive && <span className={styles.tag}>скрыто</span>}

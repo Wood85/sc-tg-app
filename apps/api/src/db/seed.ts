@@ -1,10 +1,11 @@
 // Заполняет справочники из CSV и создаёт администраторов из ADMIN_TELEGRAM_IDS.
 // Можно запускать повторно: существующие записи обновляются.
 //
-// seed/price_items.csv: category;name;unit;price   (цена в лари, «25» или «25,50»)
+// seed/price_items.csv: category;name;unit;price;tiers   (цена в лари, «25» или «25,50»)
+//   tiers — необязательные ступени по количеству: «6:8|10:7|*:6» = до 6 — 8 ₾, до 10 — 7 ₾, больше — 6 ₾
 // seed/materials.csv:   category;name;unit
 // Разделитель «;» (так сохраняет Excel) или «,». Категория: «Кондиционирование» / «Вентиляция».
-import { type Category, categories, categoryLabels } from '@sc/shared';
+import { type Category, categories, categoryLabels, type PriceTier, priceTiersSchema } from '@sc/shared';
 import { sql } from 'drizzle-orm';
 import { existsSync, readFileSync } from 'node:fs';
 import { env } from '../env.ts';
@@ -36,6 +37,17 @@ function parsePrice(value: string, line: number): number {
   return Math.round(lari * 100);
 }
 
+function parseTiers(value: string, line: number): PriceTier[] | null {
+  if (!value.trim()) return null;
+  const tiers = value.split('|').map((part) => {
+    const [upTo = '', price = ''] = part.split(':').map((s) => s.trim());
+    return { upTo: upTo === '*' ? null : Number(upTo.replace(',', '.')), price: parsePrice(price, line) };
+  });
+  const result = priceTiersSchema.safeParse(tiers);
+  if (!result.success) throw new Error(`Line ${line}: invalid tiers "${value}"`);
+  return result.data;
+}
+
 for (const telegramId of env.ADMIN_TELEGRAM_IDS) {
   await db
     .insert(users)
@@ -48,18 +60,25 @@ const priceRows = readCsv('price_items.csv');
 if (priceRows) {
   for (const [i, row] of priceRows.entries()) {
     const line = i + 2;
+    const tiers = parseTiers(row.tiers ?? '', line);
     await db
       .insert(priceItems)
       .values({
         category: parseCategory(row.category ?? '', line),
         name: row.name ?? '',
         unit: row.unit ?? '',
-        price: parsePrice(row.price ?? '', line),
+        price: tiers ? tiers[0]!.price : parsePrice(row.price ?? '', line),
+        tiers,
         sortOrder: i,
       })
       .onConflictDoUpdate({
         target: [priceItems.category, priceItems.name],
-        set: { unit: sql`excluded.unit`, price: sql`excluded.price`, sortOrder: sql`excluded.sort_order` },
+        set: {
+          unit: sql`excluded.unit`,
+          price: sql`excluded.price`,
+          tiers: sql`excluded.tiers`,
+          sortOrder: sql`excluded.sort_order`,
+        },
       });
   }
   console.log(`Price items: ${priceRows.length}`);

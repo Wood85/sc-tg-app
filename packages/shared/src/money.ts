@@ -7,6 +7,32 @@ export function lineAmount(qty: number, unitPrice: number): number {
   return Math.round((hundredths * unitPrice) / 100);
 }
 
+// Ступенчатая цена: цена за единицу зависит от общего количества в отчёте.
+// upTo — верхняя граница ступени включительно; у последней ступени null («и больше»).
+export interface PriceTier {
+  upTo: number | null;
+  price: number;
+}
+
+export function tierPrice(tiers: PriceTier[], qty: number): number {
+  const tier = tiers.find((t) => t.upTo === null || qty <= t.upTo) ?? tiers.at(-1);
+  if (!tier) throw new Error('Empty price tiers');
+  return tier.price;
+}
+
+// Цена за единицу для позиции прайса: ступенчатая или обычная.
+export function unitPriceFor(item: { price: number; tiers: PriceTier[] | null }, qty: number): number {
+  return item.tiers ? tierPrice(item.tiers, qty) : item.price;
+}
+
+// Коэффициент за работы на высоте выше 4,5 м — применяется ко всей сумме отчёта.
+export const HEIGHT_COEFFICIENT_PERCENT = 120;
+
+export function reportTotal(lineAmounts: number[], atHeight: boolean): number {
+  const sum = lineAmounts.reduce((a, b) => a + b, 0);
+  return atHeight ? Math.round((sum * HEIGHT_COEFFICIENT_PERCENT) / 100) : sum;
+}
+
 // Делим сумму поровну между участниками. Остаток в тетри достаётся первому (автору отчёта),
 // так что сумма долей всегда равна total.
 export function splitEqually(total: number, count: number): number[] {

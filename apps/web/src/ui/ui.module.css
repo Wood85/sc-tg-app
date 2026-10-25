@@ -260,3 +260,30 @@ textarea.input {
   background: transparent;
   color: var(--tg-theme-button-color, #2481cc);
 }
+
+/* Ступени цены */
+
+.tierRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tierBound {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+}
+
+.iconButton {
+  width: 28px;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  font-size: 22px;
+  line-height: 1;
+  background: none;
+  color: var(--tg-theme-hint-color, #999);
+}

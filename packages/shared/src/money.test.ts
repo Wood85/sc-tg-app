@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatMoneyInput, lineAmount, parseMoneyInput, splitEqually } from './money.ts';
+import { formatMoneyInput, lineAmount, parseMoneyInput, reportTotal, splitEqually, tierPrice } from './money.ts';
 
 describe('lineAmount', () => {
   it('multiplies fractional quantities without float drift', () => {
@@ -37,5 +37,32 @@ describe('parseMoneyInput', () => {
     for (const tetri of [0, 5, 2500, 2550, 125_099]) {
       expect(parseMoneyInput(formatMoneyInput(tetri))).toBe(tetri);
     }
+  });
+});
+
+describe('tierPrice', () => {
+  // Закладка трасс: до 6 м — 8 ₾, 7–10 м — 7 ₾, 11–20 м — 6,5 ₾, больше — 6 ₾.
+  const tiers = [
+    { upTo: 6, price: 800 },
+    { upTo: 10, price: 700 },
+    { upTo: 20, price: 650 },
+    { upTo: null, price: 600 },
+  ];
+
+  it('picks the tier by total quantity, boundaries inclusive', () => {
+    expect(tierPrice(tiers, 0.5)).toBe(800);
+    expect(tierPrice(tiers, 6)).toBe(800);
+    expect(tierPrice(tiers, 6.5)).toBe(700);
+    expect(tierPrice(tiers, 10)).toBe(700);
+    expect(tierPrice(tiers, 20)).toBe(650);
+    expect(tierPrice(tiers, 500)).toBe(600);
+  });
+});
+
+describe('reportTotal', () => {
+  it('applies the 1.2 height coefficient to the whole report', () => {
+    expect(reportTotal([1000, 2333], false)).toBe(3333);
+    expect(reportTotal([1000, 2333], true)).toBe(4000);
+    expect(reportTotal([1], true)).toBe(1);
   });
 });

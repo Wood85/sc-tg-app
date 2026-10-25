@@ -167,6 +167,48 @@ describe('reports', () => {
   });
 });
 
+describe('tiered prices and height coefficient', () => {
+  async function createRouteLaying() {
+    // Закладка трассы: до 6 м — 8 ₾/м, до 10 м — 7 ₾/м, больше — 6 ₾/м.
+    const [item] = await db
+      .insert(priceItems)
+      .values({
+        category: 'conditioning',
+        name: 'Закладка трассы',
+        unit: 'м',
+        price: 800,
+        tiers: [
+          { upTo: 6, price: 800 },
+          { upTo: 10, price: 700 },
+          { upTo: null, price: 600 },
+        ],
+      })
+      .returning();
+    return item!;
+  }
+
+  it('picks the price tier by the total quantity in the report', async () => {
+    const route = await createRouteLaying();
+    const report = (qty: number) =>
+      api<ReportDto>(ivan, 'POST', '/api/reports', draft({ participantIds: [], materials: [], works: [{ priceItemId: route.id, qty }] }));
+
+    expect((await report(5)).body.totalAmount).toBe(4_000);
+    const eight = await report(8);
+    expect(eight.body.works[0]).toMatchObject({ unitPrice: 700, amount: 5_600 });
+    expect((await report(15.5)).body.totalAmount).toBe(9_300);
+  });
+
+  it('multiplies the whole report by 1.2 for work at height and says so in the group', async () => {
+    const { body: report } = await api<ReportDto>(ivan, 'POST', '/api/reports', draft({ atHeight: true }));
+    // (2 × 50 + 33,33) × 1,2 = 159,996 → 160,00 ₾
+    expect(report.totalAmount).toBe(16_000);
+    expect(report.participants.map((p) => p.amount)).toEqual([8_000, 8_000]);
+
+    await api(ivan, 'POST', `/api/reports/${report.id}/send`);
+    expect(sent[0]!.text).toContain('🪜 Работы на высоте выше 4,5 м');
+  });
+});
+
 describe('earnings', () => {
   it('sums sent reports by day within the range', async () => {
     const send = async (workDate: string, participantIds: number[]) => {
