@@ -1,12 +1,14 @@
 import {
+  dateLabel,
   formatMoney,
+  isWeekend,
   lineAmount,
   type MeDto,
   parseQtyInput,
   type ReportDto,
   reportTotal,
   splitEqually,
-  isWeekend,
+  today,
   unitPriceFor,
   wageFor,
 } from '@sc/shared';
@@ -24,7 +26,6 @@ import {
 } from '../../api/baseApi.ts';
 import { useAppDispatch, useAppSelector } from '../../app/hooks.ts';
 import { haptic, isInsideTelegram, useMainButton } from '../../telegram.ts';
-import { dateLabel, today } from '../../ui/dates.ts';
 import { DatePicker } from '../../ui/DatePicker.tsx';
 import { ItemPicker } from './ItemPicker.tsx';
 import { ParticipantsPicker } from './ParticipantsPicker.tsx';

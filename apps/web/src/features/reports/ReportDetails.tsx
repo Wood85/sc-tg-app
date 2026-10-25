@@ -1,10 +1,9 @@
-import { categoryLabels, formatMoney, type MeDto } from '@sc/shared';
+import { categoryLabels, dateLabel, formatMoney, type MeDto } from '@sc/shared';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { errorMessage, useDeleteReportMutation, useGetReportQuery } from '../../api/baseApi.ts';
 import { confirmAction, haptic } from '../../telegram.ts';
 import { BackLink } from '../../ui/BackLink.tsx';
-import { dateLabel } from '../../ui/dates.ts';
 import { PhotoThumb, usePhotoUrl } from '../../ui/PhotoThumb.tsx';
 import styles from '../../ui/ui.module.css';
 import { statusLabels } from './ReportsList.tsx';

@@ -1,6 +1,5 @@
-import { MAX_REPORT_PHOTOS, parseQtyInput, type ReportDraftInput } from '@sc/shared';
+import { MAX_REPORT_PHOTOS, parseQtyInput, type ReportDraftInput, today } from '@sc/shared';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import { today } from '../../ui/dates.ts';
 
 export interface ReportFormState {
   address: string;

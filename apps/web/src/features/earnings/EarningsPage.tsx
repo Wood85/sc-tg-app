@@ -1,18 +1,18 @@
-import { formatMoney } from '@sc/shared';
-import { useState } from 'react';
-import { errorMessage, useGetEarningsQuery } from '../../api/baseApi.ts';
-import { Chevron } from '../../ui/Chevron.tsx';
 import {
   addMonths,
   compareMonths,
   dateLabel,
+  formatMoney,
   monthOf,
   monthRange,
   monthTitle,
   rangeLabel,
   today,
   weekRange,
-} from '../../ui/dates.ts';
+} from '@sc/shared';
+import { useState } from 'react';
+import { errorMessage, useGetEarningsQuery } from '../../api/baseApi.ts';
+import { Chevron } from '../../ui/Chevron.tsx';
 import styles from '../../ui/ui.module.css';
 
 // Заработок по дням за месяц: доли по отправленным отчётам + дневной оклад.

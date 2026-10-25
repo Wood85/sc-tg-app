@@ -1,7 +1,13 @@
-import { formatMoney, type ReportListItemDto, type ReportStatus } from '@sc/shared';
+import {
+  dateLabel,
+  formatMoney,
+  monthOf,
+  monthTitle,
+  type ReportListItemDto,
+  type ReportStatus,
+} from '@sc/shared';
 import { Link } from 'react-router';
 import { errorMessage, useGetReportsQuery } from '../../api/baseApi.ts';
-import { dateLabel, monthOf, monthTitle } from '../../ui/dates.ts';
 import styles from '../../ui/ui.module.css';
 
 export const statusLabels: Partial<Record<ReportStatus, string>> = {
