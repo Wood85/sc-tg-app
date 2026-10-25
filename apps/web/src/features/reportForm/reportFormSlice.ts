@@ -1,5 +1,6 @@
 import { MAX_REPORT_PHOTOS, parseQtyInput, type ReportDraftInput } from '@sc/shared';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import { today } from '../../ui/dates.ts';
 
 export interface ReportFormState {
   address: string;
@@ -15,11 +16,6 @@ export interface ReportFormState {
   photoIds: number[];
   // Черновик на сервере, если первая попытка отправки уже создала его.
   draftId: number | null;
-}
-
-export function today(): string {
-  // Локальная дата в формате YYYY-MM-DD.
-  return new Date().toLocaleDateString('sv-SE');
 }
 
 export function emptyForm(): ReportFormState {

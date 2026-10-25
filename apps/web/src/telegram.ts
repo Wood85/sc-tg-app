@@ -61,6 +61,11 @@ export function confirmAction(message: string): Promise<boolean> {
   return new Promise((resolve) => tg.showConfirm(message, resolve));
 }
 
+// Лёгкий отклик при выборе значения (дата, вариант из списка).
+export function hapticSelection() {
+  if (isInsideTelegram) tg.HapticFeedback.selectionChanged();
+}
+
 export function haptic(type: 'success' | 'error') {
   if (isInsideTelegram) tg.HapticFeedback.notificationOccurred(type);
 }
