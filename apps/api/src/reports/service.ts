@@ -7,11 +7,13 @@ import {
   type ReportListItemDto,
   splitEqually,
   unitPriceFor,
+  wageFor,
 } from '@sc/shared';
 import { and, asc, between, count, desc, eq, inArray, notInArray, sql } from 'drizzle-orm';
 import { GrammyError } from 'grammy';
 import { db } from '../db/index.ts';
 import {
+  dailyWages,
   materials,
   priceItems,
   reportMaterials,
@@ -23,6 +25,7 @@ import {
 } from '../db/schema.ts';
 import { env } from '../env.ts';
 import { HttpError } from '../errors.ts';
+import { getWageRates } from '../wages.ts';
 import { formatGroupMessage } from './format.ts';
 import { publishToGroup } from './publish.ts';
 
@@ -297,6 +300,12 @@ export async function sendReport(userId: number, reportId: number): Promise<Repo
         .update(reports)
         .set({ status: 'sent', sentAt: new Date(), tgMessageIds: messageIds })
         .where(eq(reports.id, reportId));
+      // Оклад за день — каждому участнику, если за эту дату его ещё не начисляли.
+      const wage = wageFor(report.workDate, await getWageRates(tx));
+      await tx
+        .insert(dailyWages)
+        .values(report.participants.map((p) => ({ userId: p.id, workDate: report.workDate, amount: wage })))
+        .onConflictDoNothing();
     });
   } catch (err) {
     // Возвращаем в черновик, чтобы автор мог исправить и отправить снова.
@@ -310,7 +319,7 @@ export async function sendReport(userId: number, reportId: number): Promise<Repo
 
 export async function getEarnings(userId: number, from: string, to: string): Promise<EarningsDto> {
   if (from > to) throw new HttpError(400, '"from" must not be after "to"');
-  const days = await db
+  const shares = await db
     .select({
       date: reports.workDate,
       amount: sql<number>`sum(${reportParticipants.amount})`.mapWith(Number),
@@ -327,5 +336,15 @@ export async function getEarnings(userId: number, from: string, to: string): Pro
     )
     .groupBy(reports.workDate)
     .orderBy(asc(reports.workDate));
+  const wages = await db
+    .select({ date: dailyWages.workDate, amount: dailyWages.amount })
+    .from(dailyWages)
+    .where(and(eq(dailyWages.userId, userId), between(dailyWages.workDate, from, to)));
+
+  const wageByDate = new Map(wages.map((w) => [w.date, w.amount]));
+  const days = shares.map((d) => {
+    const wage = wageByDate.get(d.date) ?? 0;
+    return { date: d.date, amount: d.amount + wage, wage, reports: d.reports };
+  });
   return { days, total: days.reduce((sum, d) => sum + d.amount, 0) };
 }

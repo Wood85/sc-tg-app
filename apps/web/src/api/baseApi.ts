@@ -3,10 +3,12 @@ import type {
   AdminPriceItemDto,
   AdminUserDto,
   CatalogDto,
+  EarningsDto,
   MaterialInput,
   PhotoDto,
   PriceItemInput,
   UserInput,
+  WageRates,
   MeDto,
   ReportDraftInput,
   ReportDto,
@@ -34,6 +36,11 @@ export const baseApi = createApi({
     getMe: build.query<MeDto, void>({ query: () => '/me' }),
     getCatalog: build.query<CatalogDto, void>({ query: () => '/catalog', providesTags: ['Catalog'] }),
     getUsers: build.query<UserBriefDto[], void>({ query: () => '/users', providesTags: ['Users'] }),
+    // Заработок по дням (доли по отчётам + оклад); обновляется после отправки отчёта.
+    getEarnings: build.query<EarningsDto, { from: string; to: string }>({
+      query: ({ from, to }) => `/me/earnings?from=${from}&to=${to}`,
+      providesTags: ['Report'],
+    }),
     getReports: build.query<ReportListItemDto[], void>({
       query: () => '/reports',
       providesTags: ['Report'],
@@ -92,6 +99,14 @@ export const baseApi = createApi({
       query: (id) => ({ url: `/admin/materials/${id}`, method: 'DELETE' }),
       invalidatesTags: ['Catalog'],
     }),
+    getWageRates: build.query<WageRates, void>({
+      query: () => '/admin/wage-rates',
+      providesTags: ['Catalog'],
+    }),
+    saveWageRates: build.mutation<WageRates, WageRates>({
+      query: (body) => ({ url: '/admin/wage-rates', method: 'PUT', body }),
+      invalidatesTags: ['Catalog'],
+    }),
     getAdminUsers: build.query<AdminUserDto[], void>({
       query: () => '/admin/users',
       providesTags: ['Users'],
@@ -109,6 +124,7 @@ export const {
   useGetCatalogQuery,
   useGetUsersQuery,
   useGetReportsQuery,
+  useGetEarningsQuery,
   useCreateReportMutation,
   useUpdateReportMutation,
   useSendReportMutation,
@@ -120,6 +136,8 @@ export const {
   useGetAdminMaterialsQuery,
   useSaveMaterialMutation,
   useDeleteMaterialMutation,
+  useGetWageRatesQuery,
+  useSaveWageRatesMutation,
   useGetAdminUsersQuery,
   useSaveUserMutation,
 } = baseApi;

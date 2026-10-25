@@ -6,6 +6,7 @@ import { CatalogItemEdit } from './features/admin/CatalogItemEdit.tsx';
 import { CatalogList } from './features/admin/CatalogList.tsx';
 import { UserEdit } from './features/admin/UserEdit.tsx';
 import { UserList } from './features/admin/UserList.tsx';
+import { WageRatesEdit } from './features/admin/WageRatesEdit.tsx';
 import { ReportForm } from './features/reportForm/ReportForm.tsx';
 import styles from './ui/ui.module.css';
 
@@ -54,6 +55,7 @@ function AdminRoutes({ me }: { me: MeDto }) {
         <Route path="works" element={<CatalogList kind="works" />} />
         <Route path="materials" element={<CatalogList kind="materials" />} />
         <Route path="users" element={<UserList />} />
+        <Route path="wages" element={<WageRatesEdit />} />
       </Route>
       <Route path="works/:id" element={<CatalogItemEdit kind="works" />} />
       <Route path="materials/:id" element={<CatalogItemEdit kind="materials" />} />

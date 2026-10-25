@@ -6,7 +6,9 @@ import {
   type ReportDto,
   reportTotal,
   splitEqually,
+  isWeekend,
   unitPriceFor,
+  wageFor,
 } from '@sc/shared';
 import { useState } from 'react';
 import {
@@ -14,6 +16,7 @@ import {
   errorStatus,
   useCreateReportMutation,
   useGetCatalogQuery,
+  useGetEarningsQuery,
   useGetReportsQuery,
   useGetUsersQuery,
   useSendReportMutation,
@@ -21,7 +24,7 @@ import {
 } from '../../api/baseApi.ts';
 import { useAppDispatch, useAppSelector } from '../../app/hooks.ts';
 import { haptic, isInsideTelegram, useMainButton } from '../../telegram.ts';
-import { today } from '../../ui/dates.ts';
+import { dateLabel, today } from '../../ui/dates.ts';
 import { DatePicker } from '../../ui/DatePicker.tsx';
 import { ItemPicker } from './ItemPicker.tsx';
 import { ParticipantsPicker } from './ParticipantsPicker.tsx';
@@ -77,6 +80,11 @@ function ReportFormBody({ me, onSent }: { me: MeDto; onSent: (report: ReportDto)
   });
   const total = reportTotal(lineAmounts, form.atHeight);
   const myShare = splitEqually(total, 1 + form.participantIds.length)[0] ?? 0;
+
+  // Оклад начисляется один раз за день: если за эту дату отчёт уже отправлен, второй раз его не будет.
+  const dayEarnings = useGetEarningsQuery({ from: form.workDate, to: form.workDate });
+  const wageAlreadyPaid = (dayEarnings.data?.days[0]?.wage ?? 0) > 0;
+  const wage = catalog.data && !wageAlreadyPaid ? wageFor(form.workDate, catalog.data.wageRates) : 0;
 
   async function submit() {
     setShowErrors(true);
@@ -216,6 +224,16 @@ function ReportFormBody({ me, onSent }: { me: MeDto; onSent: (report: ReportDto)
             Ваша доля: <b>{formatMoney(myShare)}</b>
           </div>
         )}
+        {wageAlreadyPaid ? (
+          <div className={styles.hint}>Оклад за этот день уже начислен</div>
+        ) : (
+          <div>
+            Оклад за день ({isWeekend(form.workDate) ? 'выходной' : 'будний'}): <b>{formatMoney(wage)}</b>
+          </div>
+        )}
+        <div>
+          Итого вам: <b>{formatMoney(myShare + wage)}</b>
+        </div>
         <p className={styles.hint}>В группу суммы не отправляются.</p>
       </section>
 
@@ -234,6 +252,7 @@ function ReportFormBody({ me, onSent }: { me: MeDto; onSent: (report: ReportDto)
 function SentScreen({ report, me, onNew }: { report: ReportDto; me: MeDto; onNew: () => void }) {
   useMainButton({ text: 'Новый отчёт', onClick: onNew });
   const myAmount = report.participants.find((p) => p.id === me.id)?.amount ?? 0;
+  const day = useGetEarningsQuery({ from: report.workDate, to: report.workDate }).data?.days[0];
 
   return (
     <div className={styles.form}>
@@ -247,8 +266,18 @@ function SentScreen({ report, me, onNew }: { report: ReportDto; me: MeDto; onNew
           Сумма по прайсу: <b>{formatMoney(report.totalAmount)}</b>
         </p>
         <p>
-          Ваш заработок: <b>{formatMoney(myAmount)}</b>
+          Ваша доля по отчёту: <b>{formatMoney(myAmount)}</b>
         </p>
+        {day && (
+          <>
+            <p>
+              Оклад за день: <b>{formatMoney(day.wage)}</b>
+            </p>
+            <p>
+              Всего за {dateLabel(report.workDate).toLowerCase()}: <b>{formatMoney(day.amount)}</b>
+            </p>
+          </>
+        )}
       </section>
       {!isInsideTelegram && (
         <button className={styles.submit} type="button" onClick={onNew}>

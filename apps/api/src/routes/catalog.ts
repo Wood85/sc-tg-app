@@ -3,10 +3,11 @@ import { asc, eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { db } from '../db/index.ts';
 import { materials, priceItems, users } from '../db/schema.ts';
+import { getWageRates } from '../wages.ts';
 
 export async function catalogRoutes(app: FastifyInstance) {
   app.get('/catalog', async (): Promise<CatalogDto> => {
-    const [items, mats] = await Promise.all([
+    const [items, mats, wageRates] = await Promise.all([
       db
         .select({
           id: priceItems.id,
@@ -24,8 +25,9 @@ export async function catalogRoutes(app: FastifyInstance) {
         .from(materials)
         .where(eq(materials.isActive, true))
         .orderBy(asc(materials.category), asc(materials.sortOrder), asc(materials.id)),
+      getWageRates(),
     ]);
-    return { priceItems: items, materials: mats };
+    return { priceItems: items, materials: mats, wageRates };
   });
 
   // Для выбора участников бригады.

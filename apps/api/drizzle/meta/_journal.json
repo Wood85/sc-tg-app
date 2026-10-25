@@ -36,6 +36,13 @@
       "when": 1792954802887,
       "tag": "0004_drop_photo_s3_key",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792958331164,
+      "tag": "0005_daily_wage",
+      "breakpoints": true
     }
   ]
 }

@@ -143,4 +143,25 @@ export const reportPhotos = pgTable(
   (t) => [index().on(t.reportId)],
 );
 
+// Настройки, которые меняет админ (сейчас — ставки дневного оклада, в тетри).
+export const settings = pgTable('settings', {
+  key: text().primaryKey(),
+  value: integer().notNull(),
+});
+
+// Начисленный дневной оклад: один на человека за дату работ. Ставка фиксируется
+// при отправке первого отчёта за день, поэтому смена ставок не меняет прошлые дни.
+export const dailyWages = pgTable(
+  'daily_wages',
+  {
+    userId: integer()
+      .notNull()
+      .references(() => users.id),
+    workDate: date({ mode: 'string' }).notNull(),
+    amount: integer().notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.workDate] })],
+);
+
 export type User = typeof users.$inferSelect;
