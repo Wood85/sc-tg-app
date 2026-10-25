@@ -1,4 +1,4 @@
-import { categories, roles } from '@sc/shared';
+import { categories, reportStatuses, roles } from '@sc/shared';
 import { sql } from 'drizzle-orm';
 import {
   bigint,
@@ -19,7 +19,7 @@ import {
 
 export const roleEnum = pgEnum('role', roles);
 export const categoryEnum = pgEnum('category', categories);
-export const reportStatusEnum = pgEnum('report_status', ['draft', 'sent']);
+export const reportStatusEnum = pgEnum('report_status', reportStatuses);
 
 const id = () => integer().primaryKey().generatedAlwaysAsIdentity();
 const createdAt = () => timestamp({ withTimezone: true }).notNull().defaultNow();

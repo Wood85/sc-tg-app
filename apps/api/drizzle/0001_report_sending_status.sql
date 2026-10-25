@@ -1,0 +1,1 @@
+ALTER TYPE "public"."report_status" ADD VALUE 'sending' BEFORE 'sent';

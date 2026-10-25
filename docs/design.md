@@ -38,7 +38,7 @@ users                id, telegram_id, name, role (installer|admin), is_active
 price_items          id, category (conditioning|ventilation), name, unit, price, is_active
 materials            id, category, name, unit, is_active
 reports              id, author_id, address, location, work_date, comment,
-                     status (draft|sent), total_amount, tg_message_ids, created_at
+                     status (draft|sending|sent), total_amount, tg_message_ids, created_at, sent_at
 report_participants  report_id, user_id, amount
 report_works         report_id, price_item_id, qty numeric(10,2), unit_price_snapshot, amount
 report_materials     report_id, material_id, qty numeric(10,2)
@@ -85,4 +85,6 @@ report_photos        report_id, s3_key, tg_file_id, sort_order
 2. [ ] Подготовить CSV справочников: работы (название, категория, единица, цена) и материалы (название, категория, единица).
 3. [x] Каркас монорепо + проверка initData + Drizzle-схема + docker-compose с Postgres.
 4. [ ] Сквозной минимум внутри Telegram: бот + туннель → «Привет, {имя}» (в браузере уже работает).
-5. [ ] Справочники и seed → форма отчёта → фото → отправка → профиль → админка → деплой.
+5. [x] API отчётов: черновики, отправка в группу, заработок по дням (ветка `feature/reports-api`).
+6. [ ] Фронт: форма отчёта → список отчётов → профиль с заработком.
+7. [ ] Фото (Cloudflare R2 → альбом в Telegram) → админка (прайс, материалы, монтажники) → деплой.
