@@ -22,6 +22,20 @@
       "when": 1792951378988,
       "tag": "0002_tiers_and_height",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792954801801,
+      "tag": "0003_photos",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792954802887,
+      "tag": "0004_drop_photo_s3_key",
+      "breakpoints": true
     }
   ]
 }

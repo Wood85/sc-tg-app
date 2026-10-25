@@ -30,7 +30,7 @@ Telegram Mini App для монтажников (кондиционирован�
 | Валидация | zod (общие схемы в `packages/shared`) |
 | Бэкенд | Node 24 (запускает .ts без сборки) + Fastify + grammY, API и бот в одном процессе; initData проверяется `@tma.js/init-data-node` |
 | БД | PostgreSQL + Drizzle |
-| Фото | черновик → Cloudflare R2 (S3 API) → альбом в Telegram (`sendMediaGroup`), храним ключ S3 и `file_id` |
+| Фото | сжатие на клиенте (1600 px, JPEG) → диск сервера (`PHOTOS_DIR`, модуль `photos/storage.ts` можно заменить на R2) → альбом в Telegram, храним путь и `file_id` |
 | Деплой | DigitalOcean Droplet (FRA1, Ubuntu 24.04) + docker compose: caddy, api, postgres, backup (pg_dump → R2) |
 | Dev | туннель `cloudflared tunnel --url localhost:5173` для HTTPS |
 
@@ -45,7 +45,7 @@ reports              id, author_id, address, location, work_date, comment, at_he
 report_participants  report_id, user_id, amount
 report_works         report_id, price_item_id, qty numeric(10,2), unit_price_snapshot, amount
 report_materials     report_id, material_id, qty numeric(10,2)
-report_photos        report_id, s3_key, tg_file_id, sort_order
+report_photos        report_id (null — ещё не прикреплено), uploader_id, storage_key, tg_file_id, sort_order, created_at
 ```
 
 ## Формат сообщения в группу
@@ -91,4 +91,5 @@ report_photos        report_id, s3_key, tg_file_id, sort_order
 5. [x] API отчётов: черновики, отправка в группу, заработок по дням (ветка `feature/reports-api`).
 6. [ ] Фронт: форма отчёта (v1 готова, ветка `feature/report-form`) → список отчётов → профиль с заработком.
 7. [x] Админка в Mini App: работы, материалы, люди (ветка `feature/admin`). Категорий две, зашиты в код — так решили.
-8. [ ] Фото (Cloudflare R2 → альбом в Telegram) → деплой.
+8. [x] Фото: загрузка со сжатием, альбом в группе, очистка неиспользованных (ветка `feature/photos`).
+9. [ ] «Мои отчёты» и профиль с заработком → деплой.

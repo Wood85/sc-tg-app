@@ -8,14 +8,23 @@ import {
   splitEqually,
   unitPriceFor,
 } from '@sc/shared';
-import { and, asc, between, count, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, between, count, desc, eq, inArray, notInArray, sql } from 'drizzle-orm';
 import { GrammyError } from 'grammy';
-import { bot } from '../bot.ts';
 import { db } from '../db/index.ts';
-import { materials, priceItems, reportMaterials, reportParticipants, reports, reportWorks, users } from '../db/schema.ts';
+import {
+  materials,
+  priceItems,
+  reportMaterials,
+  reportParticipants,
+  reportPhotos,
+  reports,
+  reportWorks,
+  users,
+} from '../db/schema.ts';
 import { env } from '../env.ts';
 import { HttpError } from '../errors.ts';
-import { formatGroupMessage, splitMessage } from './format.ts';
+import { formatGroupMessage } from './format.ts';
+import { publishToGroup } from './publish.ts';
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -56,6 +65,16 @@ async function writeContent(tx: Tx, reportId: number, authorId: number, input: R
       : [];
   if (activeMaterials.length !== materialIds.length) throw new HttpError(400, 'Unknown material');
 
+  // Фото: только свои и ещё не прикреплённые к другому отчёту.
+  if (input.photoIds.length > 0) {
+    const photos = await tx
+      .select({ uploaderId: reportPhotos.uploaderId, reportId: reportPhotos.reportId })
+      .from(reportPhotos)
+      .where(inArray(reportPhotos.id, input.photoIds));
+    const usable = photos.filter((p) => p.uploaderId === authorId && (p.reportId === null || p.reportId === reportId));
+    if (usable.length !== input.photoIds.length) throw new HttpError(400, 'Unknown photo');
+  }
+
   const total = reportTotal(
     works.map((w) => w.amount),
     input.atHeight,
@@ -74,6 +93,20 @@ async function writeContent(tx: Tx, reportId: number, authorId: number, input: R
     await tx
       .insert(reportMaterials)
       .values(input.materials.map((m) => ({ reportId, materialId: m.materialId, qty: m.qty })));
+  }
+
+  // Убранные из отчёта фото отвязываем — их удалит очистка.
+  await tx
+    .update(reportPhotos)
+    .set({ reportId: null })
+    .where(
+      and(
+        eq(reportPhotos.reportId, reportId),
+        input.photoIds.length > 0 ? notInArray(reportPhotos.id, input.photoIds) : undefined,
+      ),
+    );
+  for (const [sortOrder, photoId] of input.photoIds.entries()) {
+    await tx.update(reportPhotos).set({ reportId, sortOrder }).where(eq(reportPhotos.id, photoId));
   }
 
   await tx
@@ -137,7 +170,7 @@ export async function getReport(userId: number, reportId: number): Promise<Repor
     : [];
   if (!report || !participants.some((p) => p.id === userId)) throw new HttpError(404, 'Report not found');
 
-  const [works, mats] = await Promise.all([
+  const [works, mats, photos] = await Promise.all([
     db
       .select({
         priceItemId: reportWorks.priceItemId,
@@ -164,6 +197,11 @@ export async function getReport(userId: number, reportId: number): Promise<Repor
       .innerJoin(materials, eq(materials.id, reportMaterials.materialId))
       .where(eq(reportMaterials.reportId, reportId))
       .orderBy(asc(reportMaterials.id)),
+    db
+      .select({ id: reportPhotos.id })
+      .from(reportPhotos)
+      .where(eq(reportPhotos.reportId, reportId))
+      .orderBy(asc(reportPhotos.sortOrder)),
   ]);
 
   const author = participants.find((p) => p.id === report.authorId);
@@ -180,6 +218,7 @@ export async function getReport(userId: number, reportId: number): Promise<Repor
     participants,
     works,
     materials: mats,
+    photos,
     sentAt: report.sentAt?.toISOString() ?? null,
   };
 }
@@ -233,24 +272,32 @@ export async function sendReport(userId: number, reportId: number): Promise<Repo
         participantIds: draft.participants.map((p) => p.id),
         works: draft.works.map((w) => ({ priceItemId: w.priceItemId, qty: w.qty })),
         materials: draft.materials.map((m) => ({ materialId: m.materialId, qty: m.qty })),
+        photoIds: draft.photos.map((p) => p.id),
       }),
     );
     const report = await getReport(userId, reportId);
     const text = formatGroupMessage({ ...report, participants: report.participants.map((p) => p.name) });
 
-    const messageIds: number[] = [];
-    for (const chunk of splitMessage(text)) {
-      const message = await bot.api.sendMessage(groupChatId, chunk, {
-        parse_mode: 'HTML',
-        link_preview_options: { is_disabled: true },
-      });
-      messageIds.push(message.message_id);
-    }
+    const photos = await db
+      .select({ id: reportPhotos.id, storageKey: reportPhotos.storageKey })
+      .from(reportPhotos)
+      .where(eq(reportPhotos.reportId, reportId))
+      .orderBy(asc(reportPhotos.sortOrder));
+    const { messageIds, photoFileIds } = await publishToGroup(
+      groupChatId,
+      text,
+      photos.map((p) => p.storageKey),
+    );
 
-    await db
-      .update(reports)
-      .set({ status: 'sent', sentAt: new Date(), tgMessageIds: messageIds })
-      .where(eq(reports.id, reportId));
+    await db.transaction(async (tx) => {
+      for (const [i, photo] of photos.entries()) {
+        await tx.update(reportPhotos).set({ tgFileId: photoFileIds[i] ?? null }).where(eq(reportPhotos.id, photo.id));
+      }
+      await tx
+        .update(reports)
+        .set({ status: 'sent', sentAt: new Date(), tgMessageIds: messageIds })
+        .where(eq(reports.id, reportId));
+    });
   } catch (err) {
     // Возвращаем в черновик, чтобы автор мог исправить и отправить снова.
     await db.update(reports).set({ status: 'draft' }).where(eq(reports.id, reportId));

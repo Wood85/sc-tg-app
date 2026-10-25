@@ -22,6 +22,7 @@ import {
 import { useAppDispatch, useAppSelector } from '../../app/hooks.ts';
 import { haptic, isInsideTelegram, useMainButton } from '../../telegram.ts';
 import { ItemPicker } from './ItemPicker.tsx';
+import { PhotoPicker } from './PhotoPicker.tsx';
 import styles from '../../ui/ui.module.css';
 import {
   atHeightToggled,
@@ -53,6 +54,7 @@ function ReportFormBody({ me, onSent }: { me: MeDto; onSent: (report: ReportDto)
   const [sendReport] = useSendReportMutation();
 
   const [submitting, setSubmitting] = useState(false);
+  const [photosBusy, setPhotosBusy] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
   const [submitError, setSubmitError] = useState<string>();
 
@@ -76,6 +78,11 @@ function ReportFormBody({ me, onSent }: { me: MeDto; onSent: (report: ReportDto)
   async function submit() {
     setShowErrors(true);
     if (hasErrors(errors)) {
+      haptic('error');
+      return;
+    }
+    if (photosBusy) {
+      setSubmitError('Дождитесь загрузки фото или уберите фото с ошибкой');
       haptic('error');
       return;
     }
@@ -192,6 +199,8 @@ function ReportFormBody({ me, onSent }: { me: MeDto; onSent: (report: ReportDto)
         isInvalid={(id) => visibleErrors.invalidQtyIds.has(`materials:${id}`)}
         onChange={(id, value) => dispatch(qtyChanged({ kind: 'materials', id, value }))}
       />
+
+      <PhotoPicker onBusyChange={setPhotosBusy} />
 
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Комментарий</h2>

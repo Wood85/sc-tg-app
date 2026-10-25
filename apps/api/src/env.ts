@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 
 // Пустая строка в .env означает «не задано».
@@ -17,6 +18,10 @@ const schema = z.object({
     .pipe(z.array(z.number().int().positive())),
   DEV_TELEGRAM_ID: optional(z.coerce.number().int().positive()),
   PORT: z.coerce.number().int().default(3000),
+  // Папка для фото отчётов; по умолчанию data/photos в корне репозитория.
+  PHOTOS_DIR: optional(z.string()).transform(
+    (dir) => dir ?? fileURLToPath(new URL('../../../data/photos', import.meta.url)),
+  ),
 });
 
 const parsed = schema.safeParse(process.env);

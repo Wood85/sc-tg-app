@@ -1,4 +1,4 @@
-import { parseQtyInput, type ReportDraftInput } from '@sc/shared';
+import { MAX_REPORT_PHOTOS, parseQtyInput, type ReportDraftInput } from '@sc/shared';
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 export interface ReportFormState {
@@ -11,6 +11,8 @@ export interface ReportFormState {
   materials: Record<number, string>;
   comment: string;
   atHeight: boolean;
+  // Уже загруженные на сервер фото, в порядке показа.
+  photoIds: number[];
   // Черновик на сервере, если первая попытка отправки уже создала его.
   draftId: number | null;
 }
@@ -30,6 +32,7 @@ export function emptyForm(): ReportFormState {
     materials: {},
     comment: '',
     atHeight: false,
+    photoIds: [],
     draftId: null,
   };
 }
@@ -58,6 +61,12 @@ const reportFormSlice = createSlice({
       if (value.trim() === '') delete state[kind][id];
       else state[kind][id] = value;
     },
+    photoAdded(state, action: PayloadAction<number>) {
+      if (state.photoIds.length < MAX_REPORT_PHOTOS) state.photoIds.push(action.payload);
+    },
+    photoRemoved(state, action: PayloadAction<number>) {
+      state.photoIds = state.photoIds.filter((id) => id !== action.payload);
+    },
     draftCreated(state, action: PayloadAction<number>) {
       state.draftId = action.payload;
     },
@@ -65,7 +74,16 @@ const reportFormSlice = createSlice({
   },
 });
 
-export const { fieldChanged, atHeightToggled, participantToggled, qtyChanged, draftCreated, formReset } = reportFormSlice.actions;
+export const {
+  fieldChanged,
+  atHeightToggled,
+  participantToggled,
+  qtyChanged,
+  photoAdded,
+  photoRemoved,
+  draftCreated,
+  formReset,
+} = reportFormSlice.actions;
 export const reportFormReducer = reportFormSlice.reducer;
 
 function toLines(entries: Record<number, string>) {
@@ -105,5 +123,6 @@ export function toDraftInput(form: ReportFormState): ReportDraftInput {
     materials: toLines(form.materials).map((l) => ({ materialId: l.id, qty: l.qty! })),
     comment: form.comment.trim(),
     atHeight: form.atHeight,
+    photoIds: form.photoIds,
   };
 }

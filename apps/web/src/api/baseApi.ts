@@ -4,6 +4,7 @@ import type {
   AdminUserDto,
   CatalogDto,
   MaterialInput,
+  PhotoDto,
   PriceItemInput,
   UserInput,
   MeDto,
@@ -14,6 +15,10 @@ import type {
 } from '@sc/shared';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { tg } from '../telegram.ts';
+
+function authHeaders(): Record<string, string> {
+  return tg.initData ? { Authorization: `tma ${tg.initData}` } : {};
+}
 
 export const baseApi = createApi({
   reducerPath: 'api',
@@ -40,6 +45,16 @@ export const baseApi = createApi({
     updateReport: build.mutation<ReportDto, { id: number; body: ReportDraftInput }>({
       query: ({ id, body }) => ({ url: `/reports/${id}`, method: 'PUT', body }),
       invalidatesTags: ['Report'],
+    }),
+    uploadPhoto: build.mutation<PhotoDto, Blob>({
+      query: (photo) => {
+        const body = new FormData();
+        body.append('file', photo, 'photo.jpg');
+        return { url: '/photos', method: 'POST', body };
+      },
+    }),
+    deletePhoto: build.mutation<void, number>({
+      query: (id) => ({ url: `/photos/${id}`, method: 'DELETE' }),
     }),
     sendReport: build.mutation<ReportDto, number>({
       query: (id) => ({ url: `/reports/${id}/send`, method: 'POST' }),
@@ -97,6 +112,8 @@ export const {
   useCreateReportMutation,
   useUpdateReportMutation,
   useSendReportMutation,
+  useUploadPhotoMutation,
+  useDeletePhotoMutation,
   useGetAdminPriceItemsQuery,
   useSavePriceItemMutation,
   useDeletePriceItemMutation,
@@ -106,6 +123,14 @@ export const {
   useGetAdminUsersQuery,
   useSaveUserMutation,
 } = baseApi;
+
+// Фото отдаются только с авторизацией, поэтому <img src="/api/photos/…"> не подходит:
+// скачиваем и показываем через object URL.
+export async function fetchPhotoUrl(id: number): Promise<string> {
+  const res = await fetch(`/api/photos/${id}`, { headers: authHeaders() });
+  if (!res.ok) throw new Error(`Photo ${id}: ${res.status}`);
+  return URL.createObjectURL(await res.blob());
+}
 
 // Текст ошибки из ответа API ({ message }) или общий текст.
 export function errorMessage(error: unknown): string {
