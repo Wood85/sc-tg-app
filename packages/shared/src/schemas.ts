@@ -39,6 +39,30 @@ export const reportDraftSchema = z.object({
 export type ReportDraftInput = z.input<typeof reportDraftSchema>;
 export type ReportDraft = z.output<typeof reportDraftSchema>;
 
+const nameSchema = z.string().trim().min(1).max(200);
+const unitSchema = z.string().trim().min(1).max(20);
+
+export const materialInputSchema = z.object({
+  category: categorySchema,
+  name: nameSchema,
+  unit: unitSchema,
+  isActive: z.boolean().default(true),
+});
+export type MaterialInput = z.input<typeof materialInputSchema>;
+
+export const priceItemInputSchema = materialInputSchema.extend({
+  price: z.number().int().min(0).max(100_000_000),
+});
+export type PriceItemInput = z.input<typeof priceItemInputSchema>;
+
+export const userInputSchema = z.object({
+  telegramId: z.number().int().positive(),
+  name: nameSchema,
+  role: z.enum(roles).default('installer'),
+  isActive: z.boolean().default(true),
+});
+export type UserInput = z.input<typeof userInputSchema>;
+
 export const earningsQuerySchema = z.object({ from: isoDateSchema, to: isoDateSchema });
 
 export interface MeDto {
@@ -56,11 +80,19 @@ export interface PriceItemDto {
   price: number;
 }
 
+export interface AdminPriceItemDto extends PriceItemDto {
+  isActive: boolean;
+}
+
 export interface MaterialDto {
   id: number;
   category: Category;
   name: string;
   unit: string;
+}
+
+export interface AdminMaterialDto extends MaterialDto {
+  isActive: boolean;
 }
 
 export interface CatalogDto {
@@ -71,6 +103,14 @@ export interface CatalogDto {
 export interface UserBriefDto {
   id: number;
   name: string;
+}
+
+export interface AdminUserDto {
+  id: number;
+  telegramId: number;
+  name: string;
+  role: Role;
+  isActive: boolean;
 }
 
 // sending — отчёт захвачен для отправки в группу; защищает от двойной отправки.

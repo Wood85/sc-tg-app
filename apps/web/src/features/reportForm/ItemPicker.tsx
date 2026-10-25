@@ -1,6 +1,6 @@
 import { type Category, categories, categoryLabels, formatMoney } from '@sc/shared';
 import { useState } from 'react';
-import styles from './ReportForm.module.css';
+import styles from '../../ui/ui.module.css';
 
 interface PickerItem {
   id: number;

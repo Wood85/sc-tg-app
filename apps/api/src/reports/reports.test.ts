@@ -2,21 +2,13 @@ import type { EarningsDto, ReportDraftInput, ReportDto, ReportListItemDto } from
 import { eq } from 'drizzle-orm';
 import type { FastifyInstance } from 'fastify';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { authHeader, createCatalog, createUser, resetDb } from '../../test/helpers.ts';
+import { authHeader, createCatalog, createUser, mockTelegram, resetDb } from '../../test/helpers.ts';
 import { buildApp } from '../app.ts';
-import { bot } from '../bot.ts';
 import { client, db } from '../db/index.ts';
 import { priceItems, type User } from '../db/schema.ts';
 
-// Вместо Telegram запоминаем, что ушло бы в группу.
-const sent: { chat_id: number; text: string }[] = [];
-let telegramDown = false;
-bot.api.config.use(async (prev, method, payload, signal) => {
-  if (method !== 'sendMessage') return prev(method, payload, signal);
-  if (telegramDown) return { ok: false, error_code: 400, description: 'Bad Request: chat not found' } as never;
-  sent.push(payload as { chat_id: number; text: string });
-  return { ok: true, result: { message_id: 100 + sent.length } } as never;
-});
+const telegram = mockTelegram();
+const sent = telegram.sent;
 
 let app: FastifyInstance;
 let ivan: User;
@@ -35,7 +27,7 @@ afterAll(async () => {
 beforeEach(async () => {
   await resetDb();
   sent.length = 0;
-  telegramDown = false;
+  telegram.down = false;
   ivan = await createUser('Иван Петров', 1001);
   sergey = await createUser('Сергей Ким', 1002);
   catalog = await createCatalog();
@@ -148,13 +140,13 @@ describe('reports', () => {
 
   it('returns the report to draft when Telegram fails', async () => {
     const { body: report } = await api<ReportDto>(ivan, 'POST', '/api/reports', draft());
-    telegramDown = true;
+    telegram.down = true;
 
     const failed = await api(ivan, 'POST', `/api/reports/${report.id}/send`);
     expect(failed.status).toBe(502);
     expect((await api<ReportDto>(ivan, 'GET', `/api/reports/${report.id}`)).body.status).toBe('draft');
 
-    telegramDown = false;
+    telegram.down = false;
     expect((await api<ReportDto>(ivan, 'POST', `/api/reports/${report.id}/send`)).body.status).toBe('sent');
   });
 

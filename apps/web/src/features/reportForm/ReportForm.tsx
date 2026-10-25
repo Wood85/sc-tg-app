@@ -13,7 +13,7 @@ import {
 import { useAppDispatch, useAppSelector } from '../../app/hooks.ts';
 import { haptic, isInsideTelegram, useMainButton } from '../../telegram.ts';
 import { ItemPicker } from './ItemPicker.tsx';
-import styles from './ReportForm.module.css';
+import styles from '../../ui/ui.module.css';
 import {
   draftCreated,
   fieldChanged,

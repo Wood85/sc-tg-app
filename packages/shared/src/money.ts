@@ -20,3 +20,15 @@ export function splitEqually(total: number, count: number): number[] {
 export function formatMoney(tetri: number): string {
   return `${(tetri / 100).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₾`;
 }
+
+// Разбирает цену в лари, введённую админом («25», «25,5», «1 250,00»), в тетри.
+export function parseMoneyInput(input: string): number | undefined {
+  const normalized = input.replace(/[\s\u00a0]/g, '').replace(',', '.');
+  if (!/^\d+(\.\d{1,2})?$/.test(normalized)) return undefined;
+  return Math.round(Number(normalized) * 100);
+}
+
+// Цена для поля ввода: 2550 → «25,50», 2500 → «25».
+export function formatMoneyInput(tetri: number): string {
+  return tetri % 100 === 0 ? String(tetri / 100) : (tetri / 100).toFixed(2).replace('.', ',');
+}

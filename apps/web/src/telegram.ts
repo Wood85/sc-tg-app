@@ -38,6 +38,23 @@ export function useMainButton({ text, onClick, disabled = false, loading = false
   }, [text, disabled, loading]);
 }
 
+// Нативная кнопка «Назад» в шапке Telegram. Вне Telegram страница показывает свою ссылку.
+export function useBackButton(onBack: () => void) {
+  const onBackRef = useRef(onBack);
+  onBackRef.current = onBack;
+
+  useEffect(() => {
+    if (!isInsideTelegram) return;
+    const handler = () => onBackRef.current();
+    tg.BackButton.onClick(handler);
+    tg.BackButton.show();
+    return () => {
+      tg.BackButton.offClick(handler);
+      tg.BackButton.hide();
+    };
+  }, []);
+}
+
 export function haptic(type: 'success' | 'error') {
   if (isInsideTelegram) tg.HapticFeedback.notificationOccurred(type);
 }

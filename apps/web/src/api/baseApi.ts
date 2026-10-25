@@ -1,5 +1,11 @@
 import type {
+  AdminMaterialDto,
+  AdminPriceItemDto,
+  AdminUserDto,
   CatalogDto,
+  MaterialInput,
+  PriceItemInput,
+  UserInput,
   MeDto,
   ReportDraftInput,
   ReportDto,
@@ -18,11 +24,11 @@ export const baseApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ['Report'],
+  tagTypes: ['Report', 'Catalog', 'Users'],
   endpoints: (build) => ({
     getMe: build.query<MeDto, void>({ query: () => '/me' }),
-    getCatalog: build.query<CatalogDto, void>({ query: () => '/catalog' }),
-    getUsers: build.query<UserBriefDto[], void>({ query: () => '/users' }),
+    getCatalog: build.query<CatalogDto, void>({ query: () => '/catalog', providesTags: ['Catalog'] }),
+    getUsers: build.query<UserBriefDto[], void>({ query: () => '/users', providesTags: ['Users'] }),
     getReports: build.query<ReportListItemDto[], void>({
       query: () => '/reports',
       providesTags: ['Report'],
@@ -39,6 +45,39 @@ export const baseApi = createApi({
       query: (id) => ({ url: `/reports/${id}/send`, method: 'POST' }),
       invalidatesTags: ['Report'],
     }),
+
+    // Админка
+    getAdminPriceItems: build.query<AdminPriceItemDto[], void>({
+      query: () => '/admin/price-items',
+      providesTags: ['Catalog'],
+    }),
+    savePriceItem: build.mutation<AdminPriceItemDto, { id: number | null; body: PriceItemInput }>({
+      query: ({ id, body }) =>
+        id === null
+          ? { url: '/admin/price-items', method: 'POST', body }
+          : { url: `/admin/price-items/${id}`, method: 'PUT', body },
+      invalidatesTags: ['Catalog'],
+    }),
+    getAdminMaterials: build.query<AdminMaterialDto[], void>({
+      query: () => '/admin/materials',
+      providesTags: ['Catalog'],
+    }),
+    saveMaterial: build.mutation<AdminMaterialDto, { id: number | null; body: MaterialInput }>({
+      query: ({ id, body }) =>
+        id === null
+          ? { url: '/admin/materials', method: 'POST', body }
+          : { url: `/admin/materials/${id}`, method: 'PUT', body },
+      invalidatesTags: ['Catalog'],
+    }),
+    getAdminUsers: build.query<AdminUserDto[], void>({
+      query: () => '/admin/users',
+      providesTags: ['Users'],
+    }),
+    saveUser: build.mutation<AdminUserDto, { id: number | null; body: UserInput }>({
+      query: ({ id, body }) =>
+        id === null ? { url: '/admin/users', method: 'POST', body } : { url: `/admin/users/${id}`, method: 'PUT', body },
+      invalidatesTags: ['Users'],
+    }),
   }),
 });
 
@@ -50,6 +89,12 @@ export const {
   useCreateReportMutation,
   useUpdateReportMutation,
   useSendReportMutation,
+  useGetAdminPriceItemsQuery,
+  useSavePriceItemMutation,
+  useGetAdminMaterialsQuery,
+  useSaveMaterialMutation,
+  useGetAdminUsersQuery,
+  useSaveUserMutation,
 } = baseApi;
 
 // Текст ошибки из ответа API ({ message }) или общий текст.
